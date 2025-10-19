@@ -136,21 +136,21 @@ export class GameEngine {
   }
 
   private async generateTasks(config: GameConfig): Promise<GameTask[]> {
-    // OpenAI is available but disabled by default for performance
-    // Set ENABLE_OPENAI=true in .env.local to enable
-    const enableOpenAI = process.env.ENABLE_OPENAI === 'true'
+    // OpenAI is enabled by default with 30s timeout
+    // Set DISABLE_OPENAI=true in .env.local to use only rule-based
+    const disableOpenAI = process.env.DISABLE_OPENAI === 'true'
     
-    if (this.openaiGenerator && enableOpenAI) {
+    if (this.openaiGenerator && !disableOpenAI) {
       try {
-        console.log('Generating tasks with OpenAI...')
+        console.log('🤖 Generating tasks with OpenAI (30s timeout)...')
         return await this.openaiGenerator.generateTasks(config)
       } catch (error) {
-        console.error('OpenAI generation failed, falling back to rule-based:', error)
+        console.error('⚠️ OpenAI generation failed, falling back to rule-based:', error)
       }
     }
     
-    // Default: Use enhanced rule-based generation (fast!)
-    console.log('Using rule-based sentence generation (fast mode)')
+    // Fallback: Use enhanced rule-based generation
+    console.log('📝 Using rule-based sentence generation')
     const tasks: GameTask[] = []
     const sentences = this.getEnhancedSentences(config.difficulty, config.wordTypes)
     
@@ -266,6 +266,8 @@ export class GameEngine {
 
       if (response.ok) {
         const data = await response.json()
+        console.log(`POS Tagger returned ${data.words.length} words for sentence: "${sentence}"`)
+        
         const words = data.words.map((w: any) => ({
           id: uuidv4(),
           text: w.text,
@@ -279,6 +281,9 @@ export class GameEngine {
             correctAnswers[word.id] = word.correctWordType
           }
         })
+
+        console.log(`Created task with ${words.length} words, ${Object.keys(correctAnswers).length} need to be answered`)
+        console.log('Words:', words.map(w => w.text).join(', '))
 
         return {
           id: uuidv4(),

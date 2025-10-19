@@ -633,6 +633,10 @@ function StudentInterface() {
   }
 
   const handleSubmitTask = async () => {
+    console.log('=== SUBMIT TASK START ===')
+    console.log('Player ID:', playerId)
+    console.log('Session ID:', sessionId)
+    
     // Auto-fill: All unanswered words are automatically set to "andere"
     const currentTaskData = tasks[currentTask]
     if (currentTaskData) {
@@ -645,12 +649,17 @@ function StudentInterface() {
         for (const word of unansweredWords) {
           await submitAnswer(word.id, 'andere')
         }
+        
+        // Wait a bit for all answers to be processed
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
     }
     
+    // Mark as submitted BEFORE calling API
     setHasSubmitted(true)
     
     try {
+      console.log('Calling submit API...')
       const response = await fetch(`/api/sessions/${sessionId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -659,11 +668,16 @@ function StudentInterface() {
       
       if (response.ok) {
         const data = await response.json()
-        console.log(`Task submitted! ${data.submittedCount}/${data.totalPlayers} players have submitted.`)
+        console.log(`✅ Task submitted! ${data.submittedCount}/${data.totalPlayers} players have submitted.`)
+        console.log('All submitted:', data.allSubmitted)
+      } else {
+        console.error('Submit API failed:', response.status)
       }
     } catch (error) {
       console.error('Error submitting task:', error)
     }
+    
+    console.log('=== SUBMIT TASK END ===')
   }
 
   if (step === 'join') {

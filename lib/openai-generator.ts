@@ -54,9 +54,9 @@ Antworte im folgenden JSON-Format:
 
 Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präpositionen, konjunktionen`
 
-    // Add timeout to prevent long waits
+    // Add timeout to prevent infinite waits
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
     
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -94,7 +94,7 @@ Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präposit
     } catch (error) {
       clearTimeout(timeoutId)
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('OpenAI request timeout (10s)')
+        throw new Error('OpenAI request timeout (30s)')
       }
       throw error
     }
