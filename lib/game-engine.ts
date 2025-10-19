@@ -136,24 +136,26 @@ export class GameEngine {
   }
 
   private async generateTasks(config: GameConfig): Promise<GameTask[]> {
-    // Temporarily disable OpenAI for better performance
-    // TODO: Re-enable when OpenAI integration is stable
-    /*
+    // Try OpenAI first if available
     if (this.openaiGenerator) {
       try {
+        console.log('Generating tasks with OpenAI...')
         return await this.openaiGenerator.generateTasks(config)
       } catch (error) {
         console.error('OpenAI generation failed, falling back to rule-based:', error)
       }
     }
-    */
     
-    // Use enhanced rule-based generation
+    // Fallback: Use enhanced rule-based generation
+    console.log('Using rule-based sentence generation')
     const tasks: GameTask[] = []
     const sentences = this.getEnhancedSentences(config.difficulty, config.wordTypes)
     
+    // Shuffle sentences for more variety
+    const shuffled = sentences.sort(() => Math.random() - 0.5)
+    
     for (let i = 0; i < config.taskCount; i++) {
-      const sentence = sentences[i % sentences.length]
+      const sentence = shuffled[i % shuffled.length]
       const task = await this.createTaskFromSentence(sentence, config.wordTypes, config.difficulty)
       tasks.push(task)
     }

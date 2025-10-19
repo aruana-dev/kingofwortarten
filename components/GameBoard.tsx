@@ -206,24 +206,20 @@ export default function GameBoard({
                 : `⚠️ Du hast ${answeredWords.length} von ${totalWords} Wörtern zugeordnet.`
               }
             </p>
-            <button
-              onClick={onSubmit}
-              disabled={progress !== 100}
-              className={`
-                px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200
-                ${progress !== 100
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl'
-                }
-              `}
-            >
-              {progress === 100 ? '✓ Aufgabe abgeben' : `→ Noch ${totalWords - answeredWords.length} Wörter übrig`}
-            </button>
             {progress !== 100 && (
-              <p className="text-xs text-gray-600 mt-2">
-                Du musst alle Wörter zuordnen, bevor du abgeben kannst.
+              <p className="text-xs text-orange-600 mb-3 font-medium">
+                💡 Nicht zugeordnete Wörter werden automatisch als "Andere Wortart" markiert
               </p>
             )}
+            <button
+              onClick={onSubmit}
+              className="px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl"
+            >
+              {progress === 100 
+                ? '✓ Aufgabe abgeben' 
+                : `✓ Abgeben (${totalWords - answeredWords.length} Wörter → "Andere")`
+              }
+            </button>
           </div>
         </div>
       )}

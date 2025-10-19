@@ -565,14 +565,18 @@ function StudentInterface() {
           if (session.isStarted) {
             // Check if task changed (compare with last known task index)
             if (session.currentTask !== lastTaskIndex && lastTaskIndex !== -1) {
-              console.log(`Task changed from ${lastTaskIndex} to ${session.currentTask} - resetting answers`)
+              console.log(`Task changed from ${lastTaskIndex} to ${session.currentTask} - resetting answers and submission`)
               setHasSubmitted(false) // Reset submission status for new task
               setPlayerAnswers({}) // Clear answers for new task
             }
+            
+            // Always update these
             setLastTaskIndex(session.currentTask)
             setCurrentTask(session.currentTask)
             setIsGameFinished(session.isFinished)
             setPlayers(session.players)
+            
+            console.log(`Student state: task=${session.currentTask}, hasSubmitted=${hasSubmitted}, isFinished=${session.isFinished}`)
           }
           
           // Check if game finished
@@ -629,6 +633,21 @@ function StudentInterface() {
   }
 
   const handleSubmitTask = async () => {
+    // Auto-fill: All unanswered words are automatically set to "andere"
+    const currentTaskData = tasks[currentTask]
+    if (currentTaskData) {
+      const unansweredWords = currentTaskData.words.filter(word => !playerAnswers[word.id])
+      
+      if (unansweredWords.length > 0) {
+        console.log(`Auto-filling ${unansweredWords.length} unanswered words with "andere"`)
+        
+        // Submit all unanswered words as "andere"
+        for (const word of unansweredWords) {
+          await submitAnswer(word.id, 'andere')
+        }
+      }
+    }
+    
     setHasSubmitted(true)
     
     try {
