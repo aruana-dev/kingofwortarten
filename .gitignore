@@ -34,5 +34,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# POS Tagger port file
+# POS Tagger
 pos-tagger/.port
+pos-tagger/__pycache__/
+pos-tagger/*.pyc
+pos-tagger/*.log
+pos-tagger/venv/
+pos-tagger/.env
