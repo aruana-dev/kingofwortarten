@@ -27,7 +27,92 @@ export class OpenAIGenerator {
 
   private async generateSingleTask(config: GameConfig): Promise<GameTask> {
     const data = await this.callOpenAI(config)
-    return this.parseOpenAIResponse(data, config)
+    const openAITask = await this.parseOpenAIResponse(data, config)
+    
+    // Use POS Tagger to get ALL words in the sentence, not just the ones OpenAI identified
+    // This ensures we have complete word coverage
+    try {
+      const improvedTask = await this.improveTaskWithPOSTagger(openAITask, config.wordTypes)
+      return improvedTask
+    } catch (error) {
+      console.warn('POS Tagger not available, using OpenAI task as-is:', error)
+      return openAITask
+    }
+  }
+  
+  private async improveTaskWithPOSTagger(task: GameTask, wordTypes: string[]): Promise<GameTask> {
+    // Try to find POS Tagger
+    let posTaggerUrl = process.env.POS_TAGGER_URL
+    
+    if (!posTaggerUrl) {
+      try {
+        const fs = await import('fs')
+        const path = await import('path')
+        const portFile = path.join(process.cwd(), 'pos-tagger', '.port')
+        if (fs.existsSync(portFile)) {
+          const port = fs.readFileSync(portFile, 'utf-8').trim()
+          posTaggerUrl = `http://localhost:${port}`
+        }
+      } catch (error) {
+        // Ignore
+      }
+    }
+    
+    if (!posTaggerUrl) {
+      const defaultPorts = [5006, 5005, 5004, 5003, 5002, 5001, 5000]
+      for (const port of defaultPorts) {
+        try {
+          const testUrl = `http://localhost:${port}/health`
+          const testResponse = await fetch(testUrl, { signal: AbortSignal.timeout(500) })
+          if (testResponse.ok) {
+            posTaggerUrl = `http://localhost:${port}`
+            break
+          }
+        } catch {
+          continue
+        }
+      }
+    }
+    
+    if (!posTaggerUrl) {
+      throw new Error('POS Tagger not found')
+    }
+    
+    // Analyze sentence with POS Tagger
+    const response = await fetch(`${posTaggerUrl}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sentence: task.sentence })
+    })
+    
+    if (!response.ok) {
+      throw new Error('POS Tagger request failed')
+    }
+    
+    const data = await response.json()
+    console.log(`✅ POS Tagger improved OpenAI task: ${data.words.length} words found`)
+    
+    // Map POS Tagger words
+    const words: Word[] = data.words.map((w: any) => ({
+      id: this.generateId(),
+      text: w.text,
+      correctWordType: w.wordType,
+      position: w.position
+    }))
+    
+    // Build correct answers based on selected word types
+    const correctAnswers: { [wordId: string]: string } = {}
+    words.forEach(word => {
+      if (wordTypes.includes(word.correctWordType)) {
+        correctAnswers[word.id] = word.correctWordType
+      }
+    })
+    
+    return {
+      ...task,
+      words,
+      correctAnswers
+    }
   }
 
   private async callOpenAI(config: GameConfig): Promise<any> {
