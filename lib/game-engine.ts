@@ -136,8 +136,11 @@ export class GameEngine {
   }
 
   private async generateTasks(config: GameConfig): Promise<GameTask[]> {
-    // Try OpenAI first if available
-    if (this.openaiGenerator) {
+    // OpenAI is available but disabled by default for performance
+    // Set ENABLE_OPENAI=true in .env.local to enable
+    const enableOpenAI = process.env.ENABLE_OPENAI === 'true'
+    
+    if (this.openaiGenerator && enableOpenAI) {
       try {
         console.log('Generating tasks with OpenAI...')
         return await this.openaiGenerator.generateTasks(config)
@@ -146,8 +149,8 @@ export class GameEngine {
       }
     }
     
-    // Fallback: Use enhanced rule-based generation
-    console.log('Using rule-based sentence generation')
+    // Default: Use enhanced rule-based generation (fast!)
+    console.log('Using rule-based sentence generation (fast mode)')
     const tasks: GameTask[] = []
     const sentences = this.getEnhancedSentences(config.difficulty, config.wordTypes)
     

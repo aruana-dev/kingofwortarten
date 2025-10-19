@@ -26,6 +26,11 @@ export class OpenAIGenerator {
   }
 
   private async generateSingleTask(config: GameConfig): Promise<GameTask> {
+    const data = await this.callOpenAI(config)
+    return this.parseOpenAIResponse(data, config)
+  }
+
+  private async callOpenAI(config: GameConfig): Promise<any> {
     const wordTypesList = config.wordTypes.join(', ')
     const difficulty = this.getDifficultyDescription(config.difficulty)
     
@@ -49,34 +54,53 @@ Antworte im folgenden JSON-Format:
 
 Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präpositionen, konjunktionen`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'Du bist ein Experte für deutsche Grammatik und Pädagogik. Erstelle präzise, lehrreiche Sätze für Wortarten-Übungen.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 500,
-        temperature: 0.7
+    // Add timeout to prevent long waits
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
+              content: 'Du bist ein Experte für deutsche Grammatik und Pädagogik. Erstelle präzise, lehrreiche Sätze für Wortarten-Übungen.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        }),
+        signal: controller.signal
       })
-    })
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      return data
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('OpenAI request timeout (10s)')
+      }
+      throw error
     }
+  }
 
-    const data = await response.json()
+  private async parseOpenAIResponse(data: any, config: GameConfig): Promise<GameTask> {
     const content = data.choices[0].message.content
     
     try {
