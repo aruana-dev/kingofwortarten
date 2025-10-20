@@ -567,6 +567,9 @@ function StudentInterface() {
   const startStudentPolling = (sid: string) => {
     console.log('Starting student polling for session:', sid)
     
+    // Use refs to track current state in closure
+    let currentTaskRef = lastTaskIndex
+    
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`/api/sessions/${sid}`)
@@ -575,41 +578,52 @@ function StudentInterface() {
           console.log('Polled session:', session.isStarted, session.currentTask)
           
           // Check if game has started
-          if (session.isStarted) {
+          if (session.isStarted && step !== 'game' && step !== 'results') {
             console.log('Game has started! Moving to game view')
             setStep('game')
-            setCurrentTask(session.currentTask)
             setIsGameFinished(session.isFinished)
             setPlayers(session.players)
+            setCurrentTask(session.currentTask)
+            currentTaskRef = session.currentTask
+            setLastTaskIndex(session.currentTask)
           }
           
           // Update game state if already playing
-          if (session.isStarted) {
+          if (session.isStarted && (step === 'game' || step === 'waiting')) {
             // Check if task changed (compare with last known task index)
-            const taskChanged = session.currentTask !== lastTaskIndex && lastTaskIndex !== -1
+            const taskChanged = session.currentTask !== currentTaskRef && currentTaskRef !== -1
             
             if (taskChanged) {
-              console.log(`🔄 Task changed from ${lastTaskIndex} to ${session.currentTask} - resetting state`)
-              // IMPORTANT: Reset these BEFORE updating state
-              setHasSubmitted(false) // Reset submission status for new task
-              setPlayerAnswers({}) // Clear answers for new task
+              console.log(`🔄 Task changed from ${currentTaskRef} to ${session.currentTask} - RESETTING STATE`)
+              
+              // CRITICAL: Reset interaction state for new task
+              setHasSubmitted(false)
+              setPlayerAnswers({})
+              
+              // Update refs
+              currentTaskRef = session.currentTask
               setLastTaskIndex(session.currentTask)
-              console.log('✅ Reset complete: hasSubmitted=false, playerAnswers={}')
+              setCurrentTask(session.currentTask)
+              
+              console.log('✅ Reset complete: hasSubmitted=false, playerAnswers={}, task=' + session.currentTask)
+            } else {
+              // Just update task index if not changed yet
+              if (currentTaskRef === -1) {
+                currentTaskRef = session.currentTask
+                setLastTaskIndex(session.currentTask)
+              }
+              setCurrentTask(session.currentTask)
             }
             
             // Always update these
-            if (!taskChanged) {
-              setLastTaskIndex(session.currentTask)
-            }
-            setCurrentTask(session.currentTask)
             setIsGameFinished(session.isFinished)
             setPlayers(session.players)
             
-            console.log(`📊 Student state: task=${session.currentTask}, lastTask=${lastTaskIndex}, hasSubmitted=${hasSubmitted}, isFinished=${session.isFinished}`)
+            console.log(`📊 Student state: task=${session.currentTask}, lastTask=${currentTaskRef}`)
           }
           
           // Check if game finished
-          if (session.isFinished) {
+          if (session.isFinished && step !== 'results') {
             console.log('Game finished! Moving to results')
             setStep('results')
             stopStudentPolling()
