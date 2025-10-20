@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "pip install -r requirements.txt && python -m spacy download de_core_news_sm"
+buildCommand = "pip install -r requirements.txt && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl"
 
 [deploy]
 startCommand = "python app.py"
