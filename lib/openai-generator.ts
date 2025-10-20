@@ -246,39 +246,100 @@ export class OpenAIGenerator {
     const wordTypesList = config.wordTypes.join(', ')
     const difficulty = this.getDifficultyDescription(config.difficulty)
     
-    const prompt = `Erstelle einen deutschen Satz für ein Wortarten-Lernspiel.
+    const prompt = `Create a German sentence for a word type learning game.
 
-Anforderungen:
-- Schwierigkeitsgrad: ${difficulty}
-- Enthaltene Wortarten: ${wordTypesList}
-- Satz sollte 5-12 Wörter haben
-- Verwende verschiedene Satzstrukturen
-- Achte auf korrekte deutsche Grammatik
+REQUIREMENTS:
+- Difficulty: ${difficulty}
+- Required word types: ${wordTypesList}
+- Sentence length: 5-12 words
+- Use varied sentence structures
+- Grammatically correct German
 
-Für jedes Wort, das zu den ausgewählten Wortarten gehört, gib eine kurze, kinderfreundliche Erklärung:
-- Warum gehört dieses Wort zu dieser Wortart?
-- Wie kann man das erkennen?
-- Tipp für die Zukunft (max 2 Sätze)
+CRITICAL: WORD TYPE CLASSIFICATION RULES
+Use EXACTLY these word type IDs (lowercase, no variations):
 
-Antworte im folgenden JSON-Format:
+1. "nomen" = NOUNS
+   - All nouns (people, animals, things, abstract concepts)
+   - Proper nouns (names, places)
+   - Examples: Hund, Katze, Berlin, Liebe, Auto
+
+2. "verben" = VERBS
+   - ALL verb forms (infinitive, conjugated, participles)
+   - Auxiliary verbs (sein, haben, werden)
+   - Modal verbs (können, müssen, wollen)
+   - Examples: laufen, läuft, gelaufen, ist, hatte, wird
+
+3. "adjektive" = ADJECTIVES ONLY
+   - Descriptive words that modify nouns
+   - Can be declined or undeclined
+   - Examples: groß, schön, alt, neue, guten
+   - NOT adverbs! (see below)
+
+4. "artikel" = ARTICLES
+   - Definite: der, die, das, den, dem, des
+   - Indefinite: ein, eine, einen, einem, eines
+   - Examples: der, die, das, ein, eine
+
+5. "pronomen" = ALL PRONOUNS (no subcategories!)
+   - Personal: ich, du, er, sie, es, wir, ihr, sie
+   - Possessive: mein, dein, sein, ihr, unser
+   - Demonstrative: dieser, jener, solcher
+   - Relative: der, die, das (when relative)
+   - Interrogative: wer, was, welcher
+   - Indefinite: man, jemand, niemand, etwas
+   - Reflexive: mich, dich, sich
+   - Examples: ich, mein, dieser, wer, man, sich
+
+6. "adverbien" = ADVERBS
+   - Words that modify verbs, adjectives, or other adverbs
+   - Answer: how? when? where? why?
+   - Examples: schnell, heute, hier, deshalb, sehr, oft
+   - NOT adjectives! (adjectives modify nouns)
+
+7. "präpositionen" = PREPOSITIONS
+   - Words that show relationships (place, time, direction)
+   - Examples: in, auf, unter, mit, nach, zu, von, für
+
+8. "konjunktionen" = CONJUNCTIONS
+   - Coordinating: und, oder, aber, denn
+   - Subordinating: weil, dass, wenn, obwohl, während
+   - Examples: und, aber, weil, dass, wenn
+
+IMPORTANT DISAMBIGUATION:
+- "schnell" when describing HOW something happens = adverbien (Der Hund läuft schnell)
+- "schnell" when describing a noun = adjektive (Der schnelle Hund)
+- "sein/haben/werden" = verben (always, even as auxiliary)
+- All pronoun types = pronomen (no subcategories!)
+
+For SELECTED word types, provide a brief, child-friendly explanation (max 2 sentences):
+- Why does this word belong to this word type?
+- How can students recognize it?
+- Tip for the future
+
+OUTPUT FORMAT (JSON only, no markdown):
 {
-  "sentence": "Der Satz hier",
+  "sentence": "Der große Hund läuft schnell.",
   "words": [
     {
-      "text": "Wort1", 
-      "wordType": "nomen",
-      "explanation": "Kurze Erklärung warum dies ein Nomen ist"
+      "text": "Der",
+      "wordType": "artikel",
+      "explanation": "Der ist ein Artikel, weil er vor einem Nomen steht und anzeigt, dass etwas Bestimmtes gemeint ist. Artikel erkennst du, weil sie meist vor Nomen stehen."
     },
     {
-      "text": "Wort2", 
-      "wordType": "verben",
-      "explanation": "Kurze Erklärung warum dies ein Verb ist"
+      "text": "große",
+      "wordType": "adjektive",
+      "explanation": "Groß ist ein Adjektiv, weil es das Nomen 'Hund' näher beschreibt. Adjektive beantworten die Frage 'Wie ist etwas?'"
+    },
+    {
+      "text": "Hund",
+      "wordType": "nomen",
+      "explanation": "Hund ist ein Nomen, weil es ein Lebewesen bezeichnet. Nomen schreibt man groß und kann oft 'der/die/das' davor setzen."
     }
   ]
 }
 
-Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präpositionen, konjunktionen
-Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
+ONLY include words that match the selected word types: ${wordTypesList}
+Other words can be omitted from the words array.`
 
     // Add timeout to prevent infinite waits
     const controller = new AbortController()
