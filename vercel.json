@@ -3,10 +3,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["fra1"],
-  "env": {
-    "OPENAI_API_KEY": "@openai_api_key",
-    "POS_TAGGER_URL": "@pos_tagger_url"
-  }
+  "regions": ["fra1"]
 }
 
