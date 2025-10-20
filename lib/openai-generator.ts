@@ -229,6 +229,7 @@ export class OpenAIGenerator {
     const wordTypesList = config.wordTypes.join(', ')
     const difficulty = this.getDifficultyDescription(config.difficulty)
     const model = process.env.OPENAI_MODEL || 'gpt-5'
+    const maxTokensEnv = Number(process.env.OPENAI_MAX_COMPLETION_TOKENS || '800')
     
     const prompt = `Create a German sentence for a word type learning game.
 
@@ -347,13 +348,15 @@ Other words can be omitted from the words array.`
             content: prompt
           }
         ],
-        max_completion_tokens: 500
+        max_completion_tokens: maxTokensEnv
       }
 
       if (!isGpt5) {
         requestBody.temperature = 0.7
       } else {
         console.log('ℹ️ GPT-5 detected -> omit temperature (defaults to 1)')
+        // Force strict JSON output for GPT-5
+        requestBody.response_format = { type: 'json_object' }
       }
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -378,9 +381,9 @@ Other words can be omitted from the words array.`
       
       const data = await response.json()
       
-      // LOG: Full GPT-5 Response
+      // LOG: Full GPT Response
       console.log('═══════════════════════════════════════════════════════')
-      console.log('🤖 GPT-5 RESPONSE:')
+      console.log('🤖 OpenAI RESPONSE:')
       console.log('═══════════════════════════════════════════════════════')
       console.log('Model:', data.model)
       console.log('Usage:', JSON.stringify(data.usage, null, 2))
@@ -399,30 +402,48 @@ Other words can be omitted from the words array.`
   }
 
   private async parseOpenAIResponse(data: any, config: GameConfig): Promise<GameTask> {
-    const content = data.choices[0].message.content
-    
-    console.log('🔍 Parsing GPT-5 response...')
-    
+    const content = data.choices?.[0]?.message?.content || ''
+    console.log('🔍 Parsing OpenAI response...')
+
     try {
-      // Extract JSON from markdown code blocks if present
+      // Preferred path: strict JSON (response_format=json_object)
+      if (content.trim().length === 0) {
+        // Some models put JSON into tool calls or message annotations (future-proof)
+        const first = data.choices?.[0]
+        const toolJson = first?.message?.tool_calls?.[0]?.function?.arguments
+        if (toolJson) {
+          const parsedTool = JSON.parse(toolJson)
+          console.log('✅ Parsed JSON from tool_calls')
+          return this.createTaskFromOpenAI(parsedTool, config.wordTypes)
+        }
+      }
+
+      // Fallback: extract JSON from content (code fence or inline)
       let jsonContent = content.trim()
       if (jsonContent.startsWith('```json')) {
         console.log('   Found JSON code block, extracting...')
         jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '')
       } else if (jsonContent.startsWith('```')) {
-        console.log('   Found code block, extracting...')
+        console.log('   Found generic code block, extracting...')
         jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '')
+      } else {
+        // Try to locate the first and last curly braces
+        const start = jsonContent.indexOf('{')
+        const end = jsonContent.lastIndexOf('}')
+        if (start !== -1 && end !== -1 && end > start) {
+          jsonContent = jsonContent.slice(start, end + 1)
+        }
       }
-      
+
       const parsed = JSON.parse(jsonContent)
-      console.log('✅ Successfully parsed JSON from GPT-5')
+      console.log('✅ Successfully parsed JSON from content')
       console.log('   Sentence:', parsed.sentence)
       console.log('   Words:', parsed.words?.length || 0)
       console.log('   Words with explanations:', parsed.words?.filter((w: any) => w.explanation).length || 0)
-      
+
       return this.createTaskFromOpenAI(parsed, config.wordTypes)
     } catch (parseError) {
-      console.error('❌ Error parsing GPT-5 response:', parseError)
+      console.error('❌ Error parsing response:', parseError)
       console.error('📄 Raw content:', content)
       throw new Error('Invalid response format')
     }
