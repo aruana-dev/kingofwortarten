@@ -331,27 +331,38 @@ Other words can be omitted from the words array.`
     
     try {
       console.log(`🧠 OpenAI model selected: ${model}`)
+
+      const isGpt5 = /^gpt-5/i.test(model)
+
+      // Build request body; GPT-5 supports only default temperature
+      const requestBody: any = {
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'Du bist ein Experte für deutsche Grammatik und Pädagogik. Erstelle präzise, lehrreiche Sätze für Wortarten-Übungen.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_completion_tokens: 500
+      }
+
+      if (!isGpt5) {
+        requestBody.temperature = 0.7
+      } else {
+        console.log('ℹ️ GPT-5 detected -> omit temperature (defaults to 1)')
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            {
-              role: 'system',
-              content: 'Du bist ein Experte für deutsche Grammatik und Pädagogik. Erstelle präzise, lehrreiche Sätze für Wortarten-Übungen.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_completion_tokens: 500,
-          temperature: 0.7
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal
       })
       
