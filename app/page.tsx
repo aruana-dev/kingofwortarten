@@ -220,19 +220,31 @@ function TeacherInterface() {
                 .filter(wordType => wordType.id !== 'andere') // Don't show "Andere Wortart" in selection
                 .map(wordType => {
                   const isSelected = gameConfig.wordTypes.includes(wordType.id)
-                  // Extract background color from wordType.color (e.g., "bg-blue-500" -> actual color value)
-                  const bgColor = wordType.color.split(' ')[0]
+                  
+                  // Map word type IDs to specific Tailwind classes (must be complete strings for Tailwind to detect them)
+                  const getButtonClasses = () => {
+                    if (!isSelected) {
+                      return 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                    }
+                    
+                    switch (wordType.id) {
+                      case 'nomen': return 'bg-blue-500 text-white border-blue-500'
+                      case 'verben': return 'bg-green-500 text-white border-green-500'
+                      case 'adjektive': return 'bg-yellow-500 text-white border-yellow-500'
+                      case 'artikel': return 'bg-purple-500 text-white border-purple-500'
+                      case 'pronomen': return 'bg-pink-500 text-white border-pink-500'
+                      case 'adverbien': return 'bg-indigo-500 text-white border-indigo-500'
+                      case 'präpositionen': return 'bg-red-500 text-white border-red-500'
+                      case 'konjunktionen': return 'bg-orange-500 text-white border-orange-500'
+                      default: return 'bg-gray-500 text-white border-gray-500'
+                    }
+                  }
                   
                   return (
                     <button
                       key={wordType.id}
                       onClick={() => toggleWordType(wordType.id)}
-                      className={`p-3 rounded-lg border-2 transition-all font-semibold ${
-                        isSelected
-                          ? `${bgColor} ${wordType.borderColor}` // Selected: full color background
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50' // Unselected: white with gray text
-                      }`}
-                      style={isSelected ? { color: 'white' } : undefined}
+                      className={`p-3 rounded-lg border-2 transition-all font-semibold ${getButtonClasses()}`}
                     >
                       {wordType.label}
                     </button>
