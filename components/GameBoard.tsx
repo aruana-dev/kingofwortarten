@@ -13,6 +13,7 @@ interface GameBoardProps {
   onSubmit?: () => void
   playerAnswers: { [wordId: string]: string }
   isFinished: boolean
+  showResults?: boolean // New prop to control when to show results
   allowedWordTypes?: string[]
 }
 
@@ -24,6 +25,7 @@ export default function GameBoard({
   onSubmit,
   playerAnswers,
   isFinished,
+  showResults = false,
   allowedWordTypes
 }: GameBoardProps) {
   const [timeLeft, setTimeLeft] = useState(timeLimit || 0)
@@ -231,7 +233,7 @@ export default function GameBoard({
       )}
 
       {/* Results */}
-      {isFinished && (
+      {showResults && (
         <div className="card">
           <h3 className="text-lg font-semibold mb-4 text-center">Aufgabe beendet!</h3>
           <div className="space-y-2">

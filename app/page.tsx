@@ -564,19 +564,26 @@ function StudentInterface() {
           // Update game state if already playing
           if (session.isStarted) {
             // Check if task changed (compare with last known task index)
-            if (session.currentTask !== lastTaskIndex && lastTaskIndex !== -1) {
-              console.log(`Task changed from ${lastTaskIndex} to ${session.currentTask} - resetting answers and submission`)
+            const taskChanged = session.currentTask !== lastTaskIndex && lastTaskIndex !== -1
+            
+            if (taskChanged) {
+              console.log(`🔄 Task changed from ${lastTaskIndex} to ${session.currentTask} - resetting state`)
+              // IMPORTANT: Reset these BEFORE updating state
               setHasSubmitted(false) // Reset submission status for new task
               setPlayerAnswers({}) // Clear answers for new task
+              setLastTaskIndex(session.currentTask)
+              console.log('✅ Reset complete: hasSubmitted=false, playerAnswers={}')
             }
             
             // Always update these
-            setLastTaskIndex(session.currentTask)
+            if (!taskChanged) {
+              setLastTaskIndex(session.currentTask)
+            }
             setCurrentTask(session.currentTask)
             setIsGameFinished(session.isFinished)
             setPlayers(session.players)
             
-            console.log(`Student state: task=${session.currentTask}, hasSubmitted=${hasSubmitted}, isFinished=${session.isFinished}`)
+            console.log(`📊 Student state: task=${session.currentTask}, lastTask=${lastTaskIndex}, hasSubmitted=${hasSubmitted}, isFinished=${session.isFinished}`)
           }
           
           // Check if game finished
@@ -771,7 +778,8 @@ function StudentInterface() {
                     onTimeUp={() => {}} // Handled by teacher
                     onSubmit={handleSubmitTask}
                     playerAnswers={playerAnswers}
-                    isFinished={isGameFinished || hasSubmitted}
+                    isFinished={hasSubmitted} // Disable interaction when submitted
+                    showResults={false} // Never show results during gameplay, only at end
                     allowedWordTypes={gameConfig.wordTypes}
                   />
                   {hasSubmitted && !isGameFinished && (
