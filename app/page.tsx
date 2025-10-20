@@ -218,19 +218,25 @@ function TeacherInterface() {
             <div className="grid grid-cols-2 gap-3">
               {Object.values(WORD_TYPES)
                 .filter(wordType => wordType.id !== 'andere') // Don't show "Andere Wortart" in selection
-                .map(wordType => (
-                  <button
-                    key={wordType.id}
-                    onClick={() => toggleWordType(wordType.id)}
-                    className={`p-3 rounded-lg border-2 transition-all font-semibold ${
-                      gameConfig.wordTypes.includes(wordType.id)
-                        ? `${wordType.color} ${wordType.borderColor}` // Selected: full color with white text
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50' // Unselected: white with gray text
-                    }`}
-                  >
-                    {wordType.label}
-                  </button>
-                ))
+                .map(wordType => {
+                  const isSelected = gameConfig.wordTypes.includes(wordType.id)
+                  // Extract background color from wordType.color (e.g., "bg-blue-500 text-white" -> "bg-blue-500")
+                  const bgColor = wordType.color.split(' ')[0]
+                  
+                  return (
+                    <button
+                      key={wordType.id}
+                      onClick={() => toggleWordType(wordType.id)}
+                      className={`p-3 rounded-lg border-2 transition-all font-semibold ${
+                        isSelected
+                          ? `${bgColor} ${wordType.borderColor} !text-white` // Selected: full color with WHITE TEXT (forced!)
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50' // Unselected: white with gray text
+                      }`}
+                    >
+                      {wordType.label}
+                    </button>
+                  )
+                })
               }
             </div>
           </div>
