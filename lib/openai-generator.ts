@@ -29,13 +29,18 @@ export class OpenAIGenerator {
     const data = await this.callOpenAI(config)
     const openAITask = await this.parseOpenAIResponse(data, config)
     
+    console.log(`📝 OpenAI generated sentence: "${openAITask.sentence}"`)
+    console.log(`📊 OpenAI found ${openAITask.words.length} words`)
+    
     // Use POS Tagger to get ALL words in the sentence, not just the ones OpenAI identified
     // This ensures we have complete word coverage
     try {
       const improvedTask = await this.improveTaskWithPOSTagger(openAITask, config.wordTypes)
+      console.log(`✅ POS Tagger improved task: ${improvedTask.words.length} words total`)
       return improvedTask
     } catch (error) {
-      console.warn('POS Tagger not available, using OpenAI task as-is:', error)
+      console.error('❌ POS Tagger failed:', error)
+      console.warn('⚠️ Using OpenAI task as-is (may have incomplete words!)')
       return openAITask
     }
   }
@@ -43,6 +48,9 @@ export class OpenAIGenerator {
   private async improveTaskWithPOSTagger(task: GameTask, wordTypes: string[]): Promise<GameTask> {
     // Try to find POS Tagger
     let posTaggerUrl = process.env.POS_TAGGER_URL
+    
+    console.log(`🔍 Looking for POS Tagger...`)
+    console.log(`   ENV POS_TAGGER_URL: ${posTaggerUrl || 'not set'}`)
     
     if (!posTaggerUrl) {
       try {
@@ -52,13 +60,15 @@ export class OpenAIGenerator {
         if (fs.existsSync(portFile)) {
           const port = fs.readFileSync(portFile, 'utf-8').trim()
           posTaggerUrl = `http://localhost:${port}`
+          console.log(`   Found .port file: ${posTaggerUrl}`)
         }
       } catch (error) {
-        // Ignore
+        console.log(`   .port file not found`)
       }
     }
     
     if (!posTaggerUrl) {
+      console.log(`   Trying default ports...`)
       const defaultPorts = [5006, 5005, 5004, 5003, 5002, 5001, 5000]
       for (const port of defaultPorts) {
         try {
@@ -66,6 +76,7 @@ export class OpenAIGenerator {
           const testResponse = await fetch(testUrl, { signal: AbortSignal.timeout(500) })
           if (testResponse.ok) {
             posTaggerUrl = `http://localhost:${port}`
+            console.log(`   Found POS Tagger on port ${port}`)
             break
           }
         } catch {
@@ -75,8 +86,11 @@ export class OpenAIGenerator {
     }
     
     if (!posTaggerUrl) {
+      console.error(`❌ POS Tagger not found on any port`)
       throw new Error('POS Tagger not found')
     }
+    
+    console.log(`✅ Using POS Tagger: ${posTaggerUrl}`)
     
     // Analyze sentence with POS Tagger
     const response = await fetch(`${posTaggerUrl}/analyze`, {
