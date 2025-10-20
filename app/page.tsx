@@ -665,6 +665,7 @@ function StudentInterface() {
     console.log('=== SUBMIT TASK START ===')
     console.log('Player ID:', playerId)
     console.log('Session ID:', sessionId)
+    console.log('Current Task:', currentTask)
     
     // Auto-fill: All unanswered words are automatically set to "andere"
     const currentTaskData = tasks[currentTask]
@@ -686,24 +687,32 @@ function StudentInterface() {
     
     // Mark as submitted BEFORE calling API
     setHasSubmitted(true)
+    console.log('✅ Local hasSubmitted set to TRUE')
     
     try {
-      console.log('Calling submit API...')
+      console.log(`🔵 Calling submit API: POST /api/sessions/${sessionId}/submit`)
+      console.log(`   Payload: { playerId: "${playerId}" }`)
+      
       const response = await fetch(`/api/sessions/${sessionId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId })
       })
       
+      console.log(`📡 Submit API response status: ${response.status}`)
+      
       if (response.ok) {
         const data = await response.json()
-        console.log(`✅ Task submitted! ${data.submittedCount}/${data.totalPlayers} players have submitted.`)
-        console.log('All submitted:', data.allSubmitted)
+        console.log(`✅ Task submitted successfully!`)
+        console.log(`   ${data.submittedCount}/${data.totalPlayers} players have submitted`)
+        console.log(`   All submitted: ${data.allSubmitted}`)
       } else {
-        console.error('Submit API failed:', response.status)
+        const errorData = await response.text()
+        console.error(`❌ Submit API failed: ${response.status}`)
+        console.error(`   Error: ${errorData}`)
       }
     } catch (error) {
-      console.error('Error submitting task:', error)
+      console.error('❌ Error submitting task:', error)
     }
     
     console.log('=== SUBMIT TASK END ===')
