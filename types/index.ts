@@ -41,6 +41,8 @@ export interface Word {
   correctWordType: string
   position: number
   explanation?: string // OpenAI-generated explanation for learning
+  isUncertain?: boolean // True if POS Tagger and OpenAI disagree
+  alternativeWordType?: string // The other classification if uncertain
 }
 
 export interface PlayerAnswer {

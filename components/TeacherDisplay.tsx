@@ -67,18 +67,34 @@ export default function TeacherDisplay({
                       ? 'bg-gray-500 text-white border-gray-500'
                       : 'bg-gray-100 text-gray-700 border-gray-300'
                   }
+                  ${word.isUncertain && showSolutions ? 'ring-2 ring-orange-400' : ''}
                 `}
               >
                 <div className="text-center">
-                  <div>{word.text}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <span>{word.text}</span>
+                    {word.isUncertain && showSolutions && (
+                      <span className="text-orange-500 text-sm" title="Unsichere Klassifizierung">⚠️</span>
+                    )}
+                  </div>
                   {showSolutions && isRelevant && correctType && (
                     <div className="text-xs mt-1 font-normal opacity-90">
                       {WORD_TYPES[correctType as keyof typeof WORD_TYPES]?.label}
+                      {word.isUncertain && word.alternativeWordType && (
+                        <span className="block text-orange-200 mt-0.5">
+                          (OpenAI: {WORD_TYPES[word.alternativeWordType as keyof typeof WORD_TYPES]?.label})
+                        </span>
+                      )}
                     </div>
                   )}
                   {showSolutions && isOtherType && (
                     <div className="text-xs mt-1 font-normal opacity-90">
                       Andere Wortart
+                      {word.isUncertain && word.alternativeWordType && (
+                        <span className="block text-orange-200 mt-0.5">
+                          (OpenAI: {WORD_TYPES[word.alternativeWordType as keyof typeof WORD_TYPES]?.label})
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

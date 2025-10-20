@@ -286,6 +286,12 @@ export default function GameBoard({
                               (eigentlich: {WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})
                             </span>
                           )}
+                          {/* Show uncertainty warning even for correct answers */}
+                          {word.isUncertain && (
+                            <span className="text-xs text-orange-600 ml-2">
+                              ⚠️ unsicher
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center space-x-1">
@@ -296,10 +302,27 @@ export default function GameBoard({
                               : `Andere Wortart (${WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})`
                             }
                           </span>
+                          {/* Show uncertainty warning for wrong answers */}
+                          {word.isUncertain && (
+                            <span className="text-xs text-orange-600 ml-2">
+                              ⚠️ unsicher
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
+                  {/* Show uncertainty explanation if systems disagree */}
+                  {word.isUncertain && (
+                    <div className="pl-4 pr-2 py-2 bg-orange-50 border-l-4 border-orange-400 rounded-r">
+                      <p className="text-sm text-orange-900">
+                        <span className="font-semibold">⚠️ Unsichere Klassifizierung:</span> Die automatische Analyse ist sich nicht sicher. 
+                        POS Tagger sagt "{WORD_TYPES[word.correctWordType as keyof typeof WORD_TYPES]?.label || word.correctWordType}", 
+                        OpenAI sagt "{WORD_TYPES[word.alternativeWordType as keyof typeof WORD_TYPES]?.label || word.alternativeWordType}".
+                        {isCorrect && " Deine Antwort wurde als richtig gewertet, aber der Computer könnte falsch liegen."}
+                      </p>
+                    </div>
+                  )}
                   {/* Show explanation for incorrect answers */}
                   {!isCorrect && word.explanation && (
                     <div className="pl-4 pr-2 py-2 bg-blue-50 border-l-4 border-blue-400 rounded-r">

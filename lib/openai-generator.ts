@@ -182,26 +182,50 @@ export class OpenAIGenerator {
     }
     
     const data = await response.json()
-    console.log(`✅ POS Tagger improved OpenAI task: ${data.words.length} words found`)
+    console.log(`✅ POS Tagger analyzed sentence: ${data.words.length} words found`)
     
-    // Create a map of OpenAI explanations by word text (lowercase)
+    // Create maps from OpenAI task
     const explanationMap = new Map<string, string>()
+    const openAIWordTypeMap = new Map<string, string>()
+    
     task.words.forEach(word => {
+      const cleanText = word.text.toLowerCase()
       if (word.explanation) {
-        explanationMap.set(word.text.toLowerCase(), word.explanation)
+        explanationMap.set(cleanText, word.explanation)
+      }
+      openAIWordTypeMap.set(cleanText, word.correctWordType)
+    })
+    
+    // DOUBLE VALIDATION: Compare POS Tagger with OpenAI
+    console.log(`🔍 Double validation: Comparing POS Tagger vs OpenAI...`)
+    let uncertainCount = 0
+    
+    const words: Word[] = data.words.map((w: any) => {
+      const cleanText = w.text.toLowerCase()
+      const posTaggerType = w.wordType
+      const openAIType = openAIWordTypeMap.get(cleanText)
+      
+      // Check if they disagree
+      const isUncertain = openAIType && openAIType !== posTaggerType
+      
+      if (isUncertain) {
+        uncertainCount++
+        console.log(`   ⚠️ UNCERTAIN: "${w.text}" → POS Tagger: ${posTaggerType}, OpenAI: ${openAIType}`)
+      }
+      
+      return {
+        id: this.generateId(),
+        text: w.text,
+        correctWordType: posTaggerType, // Use POS Tagger as primary
+        position: w.position,
+        explanation: explanationMap.get(cleanText),
+        isUncertain: isUncertain,
+        alternativeWordType: isUncertain ? openAIType : undefined
       }
     })
     
-    // Map POS Tagger words and try to match explanations
-    const words: Word[] = data.words.map((w: any) => ({
-      id: this.generateId(),
-      text: w.text,
-      correctWordType: w.wordType,
-      position: w.position,
-      explanation: explanationMap.get(w.text.toLowerCase()) // Keep explanation from OpenAI if available
-    }))
-    
     console.log(`📚 Preserved ${words.filter(w => w.explanation).length} explanations from OpenAI`)
+    console.log(`⚠️ Found ${uncertainCount} uncertain words (disagreement between systems)`)
     
     // Build correct answers based on selected word types
     const correctAnswers: { [wordId: string]: string } = {}
