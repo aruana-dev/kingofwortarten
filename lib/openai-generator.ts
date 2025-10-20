@@ -292,7 +292,7 @@ Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o', // Latest and best OpenAI model (as of Oct 2024)
+          model: 'gpt-4o', // Using gpt-4o (o1 models don't support system messages yet)
           messages: [
             {
               role: 'system',
