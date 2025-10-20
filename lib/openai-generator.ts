@@ -32,16 +32,88 @@ export class OpenAIGenerator {
     console.log(`📝 OpenAI generated sentence: "${openAITask.sentence}"`)
     console.log(`📊 OpenAI found ${openAITask.words.length} words`)
     
-    // Use POS Tagger to get ALL words in the sentence, not just the ones OpenAI identified
-    // This ensures we have complete word coverage
+    // FOOL-PROOF: Count actual words in sentence
+    const actualWordCount = this.countWordsInSentence(openAITask.sentence)
+    console.log(`🔢 Actual words in sentence: ${actualWordCount}`)
+    
+    // Use POS Tagger to get ALL words in the sentence
     try {
       const improvedTask = await this.improveTaskWithPOSTagger(openAITask, config.wordTypes)
       console.log(`✅ POS Tagger improved task: ${improvedTask.words.length} words total`)
+      
+      // VALIDATION: Check if word count matches
+      if (improvedTask.words.length !== actualWordCount) {
+        console.warn(`⚠️ POS Tagger word count mismatch! Expected ${actualWordCount}, got ${improvedTask.words.length}`)
+        console.warn(`   Falling back to simple tokenization...`)
+        return this.createTaskWithSimpleTokenization(openAITask, config.wordTypes)
+      }
+      
       return improvedTask
     } catch (error) {
       console.error('❌ POS Tagger failed:', error)
-      console.warn('⚠️ Using OpenAI task as-is (may have incomplete words!)')
-      return openAITask
+      console.warn('⚠️ Falling back to simple tokenization')
+      return this.createTaskWithSimpleTokenization(openAITask, config.wordTypes)
+    }
+  }
+  
+  private countWordsInSentence(sentence: string): number {
+    // Remove punctuation and split by whitespace
+    return sentence
+      .replace(/[.,!?;:]/g, '')
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0)
+      .length
+  }
+  
+  private createTaskWithSimpleTokenization(openAITask: GameTask, wordTypes: string[]): GameTask {
+    // Simple but RELIABLE: Split sentence by whitespace
+    const sentence = openAITask.sentence
+    const tokens = sentence
+      .replace(/[.,!?;:]/g, '')
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0)
+    
+    console.log(`🔧 Simple tokenization: ${tokens.length} words found`)
+    console.log(`   Words: ${tokens.join(', ')}`)
+    
+    // Map OpenAI's word types to our tokens
+    const openAIWordMap = new Map<string, string>()
+    openAITask.words.forEach(word => {
+      const cleanText = word.text.toLowerCase().replace(/[.,!?;:]/g, '')
+      openAIWordMap.set(cleanText, word.correctWordType)
+    })
+    
+    // Create words array with ALL tokens
+    const words: Word[] = tokens.map((token, index) => {
+      const cleanToken = token.toLowerCase()
+      const wordType = openAIWordMap.get(cleanToken) || 'andere'
+      
+      return {
+        id: this.generateId(),
+        text: token,
+        correctWordType: wordType,
+        position: index
+      }
+    })
+    
+    // Build correct answers based on selected word types
+    const correctAnswers: { [wordId: string]: string } = {}
+    words.forEach(word => {
+      if (wordTypes.includes(word.correctWordType)) {
+        correctAnswers[word.id] = word.correctWordType
+      }
+    })
+    
+    console.log(`✅ Task created with ${words.length} words, ${Object.keys(correctAnswers).length} need to be answered`)
+    
+    return {
+      id: openAITask.id,
+      sentence,
+      words,
+      correctAnswers,
+      timeLimit: openAITask.timeLimit
     }
   }
   
