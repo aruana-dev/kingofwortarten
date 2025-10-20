@@ -283,7 +283,7 @@ export class GameEngine {
         })
 
         console.log(`Created task with ${words.length} words, ${Object.keys(correctAnswers).length} need to be answered`)
-        console.log('Words:', words.map(w => w.text).join(', '))
+        console.log('Words:', words.map((w: Word) => w.text).join(', '))
 
         return {
           id: uuidv4(),
