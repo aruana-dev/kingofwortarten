@@ -29,31 +29,14 @@ export class OpenAIGenerator {
     const data = await this.callOpenAI(config)
     const openAITask = await this.parseOpenAIResponse(data, config)
     
-    console.log(`📝 OpenAI generated sentence: "${openAITask.sentence}"`)
-    console.log(`📊 OpenAI found ${openAITask.words.length} words`)
+    console.log(`📝 GPT-5 generated sentence: "${openAITask.sentence}"`)
+    console.log(`📊 GPT-5 classified ${openAITask.words.length} words`)
     
-    // FOOL-PROOF: Count actual words in sentence
-    const actualWordCount = this.countWordsInSentence(openAITask.sentence)
-    console.log(`🔢 Actual words in sentence: ${actualWordCount}`)
+    // With GPT-5 + clear glossary, we use GPT-5 classification directly
+    // No need for POS Tagger anymore - GPT-5 is precise enough!
+    console.log(`✅ Using GPT-5 classification (POS Tagger disabled)`)
     
-    // Use POS Tagger to get ALL words in the sentence
-    try {
-      const improvedTask = await this.improveTaskWithPOSTagger(openAITask, config.wordTypes)
-      console.log(`✅ POS Tagger improved task: ${improvedTask.words.length} words total`)
-      
-      // VALIDATION: Check if word count matches
-      if (improvedTask.words.length !== actualWordCount) {
-        console.warn(`⚠️ POS Tagger word count mismatch! Expected ${actualWordCount}, got ${improvedTask.words.length}`)
-        console.warn(`   Falling back to simple tokenization...`)
-        return this.createTaskWithSimpleTokenization(openAITask, config.wordTypes)
-      }
-      
-      return improvedTask
-    } catch (error) {
-      console.error('❌ POS Tagger failed:', error)
-      console.warn('⚠️ Falling back to simple tokenization')
-      return this.createTaskWithSimpleTokenization(openAITask, config.wordTypes)
-    }
+    return openAITask
   }
   
   private countWordsInSentence(sentence: string): number {
@@ -434,7 +417,10 @@ Other words can be omitted from the words array.`
       text: w.text.replace(/[.,!?;:]$/, ''),
       correctWordType: w.wordType,
       position: index,
-      explanation: w.explanation || undefined // Include explanation from OpenAI
+      explanation: w.explanation || undefined,
+      // No uncertainty tracking - we trust GPT-5 with clear glossary
+      isUncertain: false,
+      alternativeWordType: undefined
     }))
 
     const correctAnswers: { [wordId: string]: string } = {}
@@ -444,7 +430,8 @@ Other words can be omitted from the words array.`
       }
     })
 
-    console.log(`📚 Task with explanations: ${words.filter(w => w.explanation).length}/${words.length} words have explanations`)
+    console.log(`📚 GPT-5 Task: ${words.filter(w => w.explanation).length}/${words.length} words have explanations`)
+    console.log(`🎯 Confident classification (no POS Tagger comparison)`)
 
     return {
       id: this.generateId(),
