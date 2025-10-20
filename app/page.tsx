@@ -216,19 +216,22 @@ function TeacherInterface() {
           <div className="card mb-6">
             <h3 className="text-lg font-semibold mb-4">Wortarten auswählen</h3>
             <div className="grid grid-cols-2 gap-3">
-              {Object.values(WORD_TYPES).map(wordType => (
-                <button
-                  key={wordType.id}
-                  onClick={() => toggleWordType(wordType.id)}
-                  className={`p-3 rounded-lg border-2 transition-all ${
-                    gameConfig.wordTypes.includes(wordType.id)
-                      ? `border-primary-500 ${wordType.color}`
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {wordType.label}
-                </button>
-              ))}
+              {Object.values(WORD_TYPES)
+                .filter(wordType => wordType.id !== 'andere') // Don't show "Andere Wortart" in selection
+                .map(wordType => (
+                  <button
+                    key={wordType.id}
+                    onClick={() => toggleWordType(wordType.id)}
+                    className={`p-3 rounded-lg border-2 transition-all font-semibold ${
+                      gameConfig.wordTypes.includes(wordType.id)
+                        ? `${wordType.color} ${wordType.borderColor}` // Selected: full color with white text
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50' // Unselected: white with gray text
+                    }`}
+                  >
+                    {wordType.label}
+                  </button>
+                ))
+              }
             </div>
           </div>
 
