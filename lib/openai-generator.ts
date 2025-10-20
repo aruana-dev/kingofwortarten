@@ -336,7 +336,7 @@ Other words can be omitted from the words array.`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5', // Latest GPT-5 model (October 2025) - unified GPT & o-series
+          model: 'gpt-4o', // Latest available model (GPT-5 not yet released)
           messages: [
             {
               role: 'system',
