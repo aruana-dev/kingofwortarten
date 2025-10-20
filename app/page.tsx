@@ -848,7 +848,7 @@ function StudentInterface() {
                     onSubmit={handleSubmitTask}
                     playerAnswers={playerAnswers}
                     isFinished={hasSubmitted} // Disable interaction when submitted
-                    showResults={false} // Never show results during gameplay, only at end
+                    showResults={hasSubmitted} // Show results/explanations after student submits
                     allowedWordTypes={gameConfig.wordTypes}
                   />
                   {hasSubmitted && !isGameFinished && (

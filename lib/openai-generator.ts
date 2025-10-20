@@ -292,7 +292,7 @@ Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini', // Better quality and faster than gpt-3.5-turbo
           messages: [
             {
               role: 'system',
