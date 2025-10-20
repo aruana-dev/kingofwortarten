@@ -1,0 +1,7 @@
+pos-tagger/
+railway-server/
+*.md
+.git/
+.next/
+node_modules/
+

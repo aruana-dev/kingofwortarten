@@ -27,13 +27,29 @@
 - 🎨 **Modernes UI**: Responsive Design mit Tailwind CSS
 - 🔄 **Automatische Port-Erkennung**: POS Tagger findet automatisch freie Ports
 
-## 🚀 Schnellstart
+## 🚀 Deployment
+
+### ⚡ Quick Deploy (5 Minuten)
+
+**Siehe:** [`QUICKSTART.md`](QUICKSTART.md) für schnelles Deployment!
+
+**Detailliert:** [`DEPLOY_INSTRUCTIONS.md`](DEPLOY_INSTRUCTIONS.md) für Schritt-für-Schritt Anleitung.
+
+**Setup:**
+- 🌐 **Frontend:** Vercel (kostenlos)
+- 🔧 **Backend:** Railway (~$5/Monat)
+- 🤖 **AI:** OpenAI API
+
+---
+
+## 💻 Lokale Entwicklung
 
 ### Voraussetzungen
 
 - Node.js 18+ und npm
 - Python 3.12+
 - Git
+- OpenAI API Key
 
 ### Installation
 
