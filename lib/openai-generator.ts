@@ -316,6 +316,17 @@ Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
       }
       
       const data = await response.json()
+      
+      // LOG: Full GPT-5 Response
+      console.log('═══════════════════════════════════════════════════════')
+      console.log('🤖 GPT-5 RESPONSE:')
+      console.log('═══════════════════════════════════════════════════════')
+      console.log('Model:', data.model)
+      console.log('Usage:', JSON.stringify(data.usage, null, 2))
+      console.log('\n📝 Generated Content:')
+      console.log(data.choices[0].message.content)
+      console.log('═══════════════════════════════════════════════════════\n')
+      
       return data
     } catch (error) {
       clearTimeout(timeoutId)
@@ -329,20 +340,29 @@ Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
   private async parseOpenAIResponse(data: any, config: GameConfig): Promise<GameTask> {
     const content = data.choices[0].message.content
     
+    console.log('🔍 Parsing GPT-5 response...')
+    
     try {
       // Extract JSON from markdown code blocks if present
       let jsonContent = content.trim()
       if (jsonContent.startsWith('```json')) {
+        console.log('   Found JSON code block, extracting...')
         jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '')
       } else if (jsonContent.startsWith('```')) {
+        console.log('   Found code block, extracting...')
         jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '')
       }
       
       const parsed = JSON.parse(jsonContent)
+      console.log('✅ Successfully parsed JSON from GPT-5')
+      console.log('   Sentence:', parsed.sentence)
+      console.log('   Words:', parsed.words?.length || 0)
+      console.log('   Words with explanations:', parsed.words?.filter((w: any) => w.explanation).length || 0)
+      
       return this.createTaskFromOpenAI(parsed, config.wordTypes)
     } catch (parseError) {
-      console.error('Error parsing OpenAI response:', parseError)
-      console.error('Raw content:', content)
+      console.error('❌ Error parsing GPT-5 response:', parseError)
+      console.error('📄 Raw content:', content)
       throw new Error('Invalid response format')
     }
   }
