@@ -349,7 +349,7 @@ Other words can be omitted from the words array.`
               content: prompt
             }
           ],
-          max_tokens: 500,
+          max_completion_tokens: 500,
           temperature: 0.7
         }),
         signal: controller.signal
