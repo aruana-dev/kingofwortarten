@@ -54,28 +54,30 @@ export default function TeacherDisplay({
             const isRelevant = correctType && allowedWordTypes.includes(correctType)
             const isOtherType = !correctType || !allowedWordTypes.includes(correctType)
             
+            const wordTypeInfo = correctType ? WORD_TYPES[correctType as keyof typeof WORD_TYPES] : null
+            
             return (
               <div
                 key={word.id}
                 className={`
-                  px-4 py-3 rounded-lg border-2 text-lg font-medium transition-all
-                  ${showSolutions && isRelevant 
-                    ? `${WORD_TYPES[correctType as keyof typeof WORD_TYPES]?.color} border-gray-400` 
+                  px-4 py-3 rounded-lg border-2 text-lg font-semibold transition-all shadow-sm
+                  ${showSolutions && isRelevant && wordTypeInfo
+                    ? `${wordTypeInfo.color} ${wordTypeInfo.borderColor}` 
                     : showSolutions && isOtherType
-                      ? 'bg-gray-200 text-gray-800 border-gray-400'
+                      ? 'bg-gray-500 text-white border-gray-500'
                       : 'bg-gray-100 text-gray-700 border-gray-300'
                   }
                 `}
               >
                 <div className="text-center">
-                  <div className="font-bold">{word.text}</div>
+                  <div>{word.text}</div>
                   {showSolutions && isRelevant && correctType && (
-                    <div className="text-xs mt-1 opacity-75">
+                    <div className="text-xs mt-1 font-normal opacity-90">
                       {WORD_TYPES[correctType as keyof typeof WORD_TYPES]?.label}
                     </div>
                   )}
                   {showSolutions && isOtherType && (
-                    <div className="text-xs mt-1 opacity-75">
+                    <div className="text-xs mt-1 font-normal opacity-90">
                       Andere Wortart
                     </div>
                   )}
@@ -101,7 +103,7 @@ export default function TeacherDisplay({
             .map((wordType) => (
               <div
                 key={wordType.id}
-                className={`p-4 rounded-lg border-2 border-gray-400 text-center font-medium ${wordType.color}`}
+                className={`p-4 rounded-lg border-2 text-center font-semibold shadow-sm ${wordType.color} ${wordType.borderColor}`}
               >
                 {wordType.label}
               </div>

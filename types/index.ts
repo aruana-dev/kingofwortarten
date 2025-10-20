@@ -59,15 +59,78 @@ export interface GameResult {
 }
 
 export const WORD_TYPES = {
-  nomen: { id: 'nomen', label: 'Nomen', color: 'bg-blue-100 text-blue-800' },
-  verben: { id: 'verben', label: 'Verben', color: 'bg-green-100 text-green-800' },
-  adjektive: { id: 'adjektive', label: 'Adjektive', color: 'bg-yellow-100 text-yellow-800' },
-  artikel: { id: 'artikel', label: 'Artikel', color: 'bg-purple-100 text-purple-800' },
-  pronomen: { id: 'pronomen', label: 'Pronomen', color: 'bg-pink-100 text-pink-800' },
-  adverbien: { id: 'adverbien', label: 'Adverbien', color: 'bg-indigo-100 text-indigo-800' },
-  präpositionen: { id: 'präpositionen', label: 'Präpositionen', color: 'bg-red-100 text-red-800' },
-  konjunktionen: { id: 'konjunktionen', label: 'Konjunktionen', color: 'bg-orange-100 text-orange-800' },
-  andere: { id: 'andere', label: 'Andere Wortart', color: 'bg-gray-200 text-gray-800' },
+  nomen: { 
+    id: 'nomen', 
+    label: 'Nomen', 
+    color: 'bg-blue-500 text-white',
+    lightColor: 'bg-blue-100 text-blue-800',
+    borderColor: 'border-blue-500',
+    hoverColor: 'hover:bg-blue-600'
+  },
+  verben: { 
+    id: 'verben', 
+    label: 'Verben', 
+    color: 'bg-green-500 text-white',
+    lightColor: 'bg-green-100 text-green-800',
+    borderColor: 'border-green-500',
+    hoverColor: 'hover:bg-green-600'
+  },
+  adjektive: { 
+    id: 'adjektive', 
+    label: 'Adjektive', 
+    color: 'bg-yellow-500 text-white',
+    lightColor: 'bg-yellow-100 text-yellow-800',
+    borderColor: 'border-yellow-500',
+    hoverColor: 'hover:bg-yellow-600'
+  },
+  artikel: { 
+    id: 'artikel', 
+    label: 'Artikel', 
+    color: 'bg-purple-500 text-white',
+    lightColor: 'bg-purple-100 text-purple-800',
+    borderColor: 'border-purple-500',
+    hoverColor: 'hover:bg-purple-600'
+  },
+  pronomen: { 
+    id: 'pronomen', 
+    label: 'Pronomen', 
+    color: 'bg-pink-500 text-white',
+    lightColor: 'bg-pink-100 text-pink-800',
+    borderColor: 'border-pink-500',
+    hoverColor: 'hover:bg-pink-600'
+  },
+  adverbien: { 
+    id: 'adverbien', 
+    label: 'Adverbien', 
+    color: 'bg-indigo-500 text-white',
+    lightColor: 'bg-indigo-100 text-indigo-800',
+    borderColor: 'border-indigo-500',
+    hoverColor: 'hover:bg-indigo-600'
+  },
+  präpositionen: { 
+    id: 'präpositionen', 
+    label: 'Präpositionen', 
+    color: 'bg-red-500 text-white',
+    lightColor: 'bg-red-100 text-red-800',
+    borderColor: 'border-red-500',
+    hoverColor: 'hover:bg-red-600'
+  },
+  konjunktionen: { 
+    id: 'konjunktionen', 
+    label: 'Konjunktionen', 
+    color: 'bg-orange-500 text-white',
+    lightColor: 'bg-orange-100 text-orange-800',
+    borderColor: 'border-orange-500',
+    hoverColor: 'hover:bg-orange-600'
+  },
+  andere: { 
+    id: 'andere', 
+    label: 'Andere Wortart', 
+    color: 'bg-gray-500 text-white',
+    lightColor: 'bg-gray-200 text-gray-800',
+    borderColor: 'border-gray-500',
+    hoverColor: 'hover:bg-gray-600'
+  },
 } as const
 
 export const SAMPLE_SENTENCES = {

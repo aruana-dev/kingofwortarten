@@ -58,7 +58,15 @@ export default function GameBoard({
   }
 
   const getWordTypeColor = (wordType: string) => {
-    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.color || 'bg-gray-100 text-gray-800'
+    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.lightColor || 'bg-gray-100 text-gray-800'
+  }
+  
+  const getWordTypeFullColor = (wordType: string) => {
+    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.color || 'bg-gray-500 text-white'
+  }
+  
+  const getWordTypeBorderColor = (wordType: string) => {
+    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.borderColor || 'border-gray-500'
   }
 
   const getAnswerStatus = (wordId: string) => {
@@ -180,9 +188,7 @@ export default function GameBoard({
                 <button
                   key={wordType.id}
                   onClick={() => handleWordTypeClick(wordType.id)}
-                  className={`p-4 rounded-lg border-2 transition-all duration-200 font-medium hover:shadow-md ${wordType.color} ${
-                    wordType.id === 'andere' ? 'border-gray-400' : ''
-                  }`}
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:scale-105 ${wordType.color} ${wordType.hoverColor} ${wordType.borderColor}`}
                 >
                   {wordType.label}
                 </button>
