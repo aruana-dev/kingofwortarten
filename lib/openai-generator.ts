@@ -292,7 +292,7 @@ Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o', // Using gpt-4o (o1 models don't support system messages yet)
+          model: 'gpt-5', // Latest GPT-5 model (October 2025) - unified GPT & o-series
           messages: [
             {
               role: 'system',
