@@ -31,6 +31,12 @@ export default function GameBoard({
   const [timeLeft, setTimeLeft] = useState(timeLimit || 0)
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
 
+  // Reset selected word when task changes
+  useEffect(() => {
+    console.log('🔄 Task changed, resetting selectedWord')
+    setSelectedWord(null)
+  }, [task.id])
+
   useEffect(() => {
     if (!timeLimit || isFinished) return
 
@@ -48,15 +54,25 @@ export default function GameBoard({
   }, [timeLimit, onTimeUp, isFinished])
 
   const handleWordClick = (word: Word) => {
-    if (isFinished) return
+    console.log('🖱️ Word clicked:', word.text, 'isFinished:', isFinished)
+    if (isFinished) {
+      console.log('❌ Click blocked: isFinished=true')
+      return
+    }
     setSelectedWord(selectedWord === word.id ? null : word.id)
+    console.log('✅ Selected word:', word.id)
   }
 
   const handleWordTypeClick = (wordType: string) => {
-    if (!selectedWord || isFinished) return
+    console.log('🎯 Word type clicked:', wordType, 'selectedWord:', selectedWord, 'isFinished:', isFinished)
+    if (!selectedWord || isFinished) {
+      console.log('❌ Click blocked: selectedWord=', selectedWord, 'isFinished=', isFinished)
+      return
+    }
     
     onAnswer(selectedWord, wordType)
     setSelectedWord(null)
+    console.log('✅ Answer submitted')
   }
 
   const getWordTypeColor = (wordType: string) => {
