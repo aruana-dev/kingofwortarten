@@ -228,6 +228,7 @@ export class OpenAIGenerator {
   private async callOpenAI(config: GameConfig): Promise<any> {
     const wordTypesList = config.wordTypes.join(', ')
     const difficulty = this.getDifficultyDescription(config.difficulty)
+    const model = process.env.OPENAI_MODEL || 'gpt-5'
     
     const prompt = `Create a German sentence for a word type learning game.
 
@@ -329,6 +330,7 @@ Other words can be omitted from the words array.`
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
     
     try {
+      console.log(`🧠 OpenAI model selected: ${model}`)
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -336,7 +338,7 @@ Other words can be omitted from the words array.`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o', // Latest available model (GPT-5 not yet released)
+          model,
           messages: [
             {
               role: 'system',
@@ -356,7 +358,11 @@ Other words can be omitted from the words array.`
       clearTimeout(timeoutId)
       
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`)
+        let errText = ''
+        try {
+          errText = await response.text()
+        } catch {}
+        throw new Error(`OpenAI API error ${response.status}: ${errText}`)
       }
       
       const data = await response.json()
