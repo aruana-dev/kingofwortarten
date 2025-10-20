@@ -1,0 +1,10 @@
+# Railway Ignore File
+
+# For Next.js Service (Frontend):
+# Ignore Python files
+*.py
+pos-tagger/
+
+# For Python Service (POS Tagger):
+# Will be handled by Root Directory setting
+
