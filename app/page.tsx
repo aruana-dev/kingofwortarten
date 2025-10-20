@@ -220,7 +220,7 @@ function TeacherInterface() {
                 .filter(wordType => wordType.id !== 'andere') // Don't show "Andere Wortart" in selection
                 .map(wordType => {
                   const isSelected = gameConfig.wordTypes.includes(wordType.id)
-                  // Extract background color from wordType.color (e.g., "bg-blue-500 text-white" -> "bg-blue-500")
+                  // Extract background color from wordType.color (e.g., "bg-blue-500" -> actual color value)
                   const bgColor = wordType.color.split(' ')[0]
                   
                   return (
@@ -229,9 +229,10 @@ function TeacherInterface() {
                       onClick={() => toggleWordType(wordType.id)}
                       className={`p-3 rounded-lg border-2 transition-all font-semibold ${
                         isSelected
-                          ? `${bgColor} ${wordType.borderColor} !text-white` // Selected: full color with WHITE TEXT (forced!)
+                          ? `${bgColor} ${wordType.borderColor}` // Selected: full color background
                           : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50' // Unselected: white with gray text
                       }`}
+                      style={isSelected ? { color: 'white' } : undefined}
                     >
                       {wordType.label}
                     </button>
