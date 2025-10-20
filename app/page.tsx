@@ -128,7 +128,8 @@ function TeacherInterface() {
       if (response.ok) {
         setIsGameStarted(true)
         setStep('game')
-        stopPolling() // Stop polling when game starts
+        // DON'T stop polling! We need it to track student submissions
+        console.log('✅ Game started - Polling continues to track submissions')
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Fehler beim Starten des Spiels')
@@ -154,6 +155,8 @@ function TeacherInterface() {
         
         if (data.isFinished) {
           setStep('results')
+          stopPolling() // Stop polling when game is finished
+          console.log('🏁 Game finished - Stopping polling')
         }
       }
     } catch (error) {
@@ -465,7 +468,11 @@ function TeacherInterface() {
               </button>
             ) : (
               <button
-                onClick={() => setStep('results')}
+                onClick={() => {
+                  setStep('results')
+                  stopPolling()
+                  console.log('🏁 Showing results - Stopping polling')
+                }}
                 className="btn-primary px-8 py-3 text-lg"
               >
                 🏆 Ergebnisse anzeigen
