@@ -533,6 +533,24 @@ function StudentInterface() {
   const [studentPollingInterval, setStudentPollingInterval] = useState<NodeJS.Timeout | null>(null)
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [lastTaskIndex, setLastTaskIndex] = useState<number>(-1)
+  
+  // Use refs to track state in polling closure
+  const lastTaskRef = React.useRef<number>(-1)
+  const hasSubmittedRef = React.useRef<boolean>(false)
+  const stepRef = React.useRef<'join' | 'waiting' | 'game' | 'results'>('join')
+  
+  // Update refs when state changes
+  React.useEffect(() => {
+    lastTaskRef.current = lastTaskIndex
+  }, [lastTaskIndex])
+  
+  React.useEffect(() => {
+    hasSubmittedRef.current = hasSubmitted
+  }, [hasSubmitted])
+  
+  React.useEffect(() => {
+    stepRef.current = step
+  }, [step])
 
   const joinSession = async () => {
     if (!sessionCode || !playerName) return
@@ -565,51 +583,52 @@ function StudentInterface() {
   }
 
   const startStudentPolling = (sid: string) => {
-    console.log('Starting student polling for session:', sid)
-    
-    // Use refs to track current state in closure
-    let currentTaskRef = lastTaskIndex
+    console.log('🔵 Starting student polling for session:', sid)
     
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`/api/sessions/${sid}`)
         if (response.ok) {
           const session = await response.json()
-          console.log('Polled session:', session.isStarted, session.currentTask)
+          
+          // Use refs to get current state
+          const currentStep = stepRef.current
+          const currentLastTask = lastTaskRef.current
+          const currentHasSubmitted = hasSubmittedRef.current
+          
+          console.log(`📊 Poll: task=${session.currentTask}, step=${currentStep}, lastTask=${currentLastTask}, submitted=${currentHasSubmitted}`)
           
           // Check if game has started
-          if (session.isStarted && step !== 'game' && step !== 'results') {
-            console.log('Game has started! Moving to game view')
+          if (session.isStarted && currentStep !== 'game' && currentStep !== 'results') {
+            console.log('🎮 Game has started! Moving to game view')
             setStep('game')
+            setCurrentTask(session.currentTask)
+            setLastTaskIndex(session.currentTask)
             setIsGameFinished(session.isFinished)
             setPlayers(session.players)
-            setCurrentTask(session.currentTask)
-            currentTaskRef = session.currentTask
-            setLastTaskIndex(session.currentTask)
+            return // Exit early, wait for next poll
           }
           
           // Update game state if already playing
-          if (session.isStarted && (step === 'game' || step === 'waiting')) {
-            // Check if task changed (compare with last known task index)
-            const taskChanged = session.currentTask !== currentTaskRef && currentTaskRef !== -1
+          if (session.isStarted && (currentStep === 'game' || currentStep === 'waiting')) {
+            // Check if task changed
+            const taskChanged = session.currentTask !== currentLastTask
             
             if (taskChanged) {
-              console.log(`🔄 Task changed from ${currentTaskRef} to ${session.currentTask} - RESETTING STATE`)
+              console.log(`🔄 TASK CHANGED: ${currentLastTask} → ${session.currentTask}`)
+              console.log(`   Resetting: hasSubmitted=false, playerAnswers={}`)
               
-              // CRITICAL: Reset interaction state for new task
+              // CRITICAL: Reset for new task
               setHasSubmitted(false)
               setPlayerAnswers({})
-              
-              // Update refs
-              currentTaskRef = session.currentTask
               setLastTaskIndex(session.currentTask)
               setCurrentTask(session.currentTask)
               
-              console.log('✅ Reset complete: hasSubmitted=false, playerAnswers={}, task=' + session.currentTask)
+              console.log(`✅ State reset complete for task ${session.currentTask}`)
             } else {
-              // Just update task index if not changed yet
-              if (currentTaskRef === -1) {
-                currentTaskRef = session.currentTask
+              // Just update task if first poll
+              if (currentLastTask === -1) {
+                console.log(`📌 Setting initial task index: ${session.currentTask}`)
                 setLastTaskIndex(session.currentTask)
               }
               setCurrentTask(session.currentTask)
@@ -618,19 +637,17 @@ function StudentInterface() {
             // Always update these
             setIsGameFinished(session.isFinished)
             setPlayers(session.players)
-            
-            console.log(`📊 Student state: task=${session.currentTask}, lastTask=${currentTaskRef}`)
           }
           
           // Check if game finished
-          if (session.isFinished && step !== 'results') {
-            console.log('Game finished! Moving to results')
+          if (session.isFinished && currentStep !== 'results') {
+            console.log('🏁 Game finished! Moving to results')
             setStep('results')
             stopStudentPolling()
           }
         }
       } catch (error) {
-        console.error('Error polling session:', error)
+        console.error('❌ Error polling session:', error)
       }
     }, 2000) // Poll every 2 seconds
     
