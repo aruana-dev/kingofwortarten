@@ -40,6 +40,7 @@ export interface Word {
   text: string
   correctWordType: string
   position: number
+  explanation?: string // OpenAI-generated explanation for learning
 }
 
 export interface PlayerAnswer {

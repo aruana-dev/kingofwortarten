@@ -78,23 +78,29 @@ export class OpenAIGenerator {
     console.log(`🔧 Simple tokenization: ${tokens.length} words found`)
     console.log(`   Words: ${tokens.join(', ')}`)
     
-    // Map OpenAI's word types to our tokens
-    const openAIWordMap = new Map<string, string>()
+    // Map OpenAI's word types and explanations to our tokens
+    const openAIWordMap = new Map<string, { wordType: string, explanation?: string }>()
     openAITask.words.forEach(word => {
       const cleanText = word.text.toLowerCase().replace(/[.,!?;:]/g, '')
-      openAIWordMap.set(cleanText, word.correctWordType)
+      openAIWordMap.set(cleanText, { 
+        wordType: word.correctWordType,
+        explanation: word.explanation 
+      })
     })
     
     // Create words array with ALL tokens
     const words: Word[] = tokens.map((token, index) => {
       const cleanToken = token.toLowerCase()
-      const wordType = openAIWordMap.get(cleanToken) || 'andere'
+      const openAIData = openAIWordMap.get(cleanToken)
+      const wordType = openAIData?.wordType || 'andere'
+      const explanation = openAIData?.explanation
       
       return {
         id: this.generateId(),
         text: token,
         correctWordType: wordType,
-        position: index
+        position: index,
+        explanation
       }
     })
     
@@ -178,13 +184,24 @@ export class OpenAIGenerator {
     const data = await response.json()
     console.log(`✅ POS Tagger improved OpenAI task: ${data.words.length} words found`)
     
-    // Map POS Tagger words
+    // Create a map of OpenAI explanations by word text (lowercase)
+    const explanationMap = new Map<string, string>()
+    task.words.forEach(word => {
+      if (word.explanation) {
+        explanationMap.set(word.text.toLowerCase(), word.explanation)
+      }
+    })
+    
+    // Map POS Tagger words and try to match explanations
     const words: Word[] = data.words.map((w: any) => ({
       id: this.generateId(),
       text: w.text,
       correctWordType: w.wordType,
-      position: w.position
+      position: w.position,
+      explanation: explanationMap.get(w.text.toLowerCase()) // Keep explanation from OpenAI if available
     }))
+    
+    console.log(`📚 Preserved ${words.filter(w => w.explanation).length} explanations from OpenAI`)
     
     // Build correct answers based on selected word types
     const correctAnswers: { [wordId: string]: string } = {}
@@ -214,16 +231,30 @@ Anforderungen:
 - Verwende verschiedene Satzstrukturen
 - Achte auf korrekte deutsche Grammatik
 
+Für jedes Wort, das zu den ausgewählten Wortarten gehört, gib eine kurze, kinderfreundliche Erklärung:
+- Warum gehört dieses Wort zu dieser Wortart?
+- Wie kann man das erkennen?
+- Tipp für die Zukunft (max 2 Sätze)
+
 Antworte im folgenden JSON-Format:
 {
   "sentence": "Der Satz hier",
   "words": [
-    {"text": "Wort1", "wordType": "nomen"},
-    {"text": "Wort2", "wordType": "verben"}
+    {
+      "text": "Wort1", 
+      "wordType": "nomen",
+      "explanation": "Kurze Erklärung warum dies ein Nomen ist"
+    },
+    {
+      "text": "Wort2", 
+      "wordType": "verben",
+      "explanation": "Kurze Erklärung warum dies ein Verb ist"
+    }
   ]
 }
 
-Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präpositionen, konjunktionen`
+Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präpositionen, konjunktionen
+Hinweis: Nur Wörter der ausgewählten Wortarten brauchen eine explanation.`
 
     // Add timeout to prevent infinite waits
     const controller = new AbortController()
@@ -297,7 +328,8 @@ Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präposit
       id: this.generateId(),
       text: w.text.replace(/[.,!?;:]$/, ''),
       correctWordType: w.wordType,
-      position: index
+      position: index,
+      explanation: w.explanation || undefined // Include explanation from OpenAI
     }))
 
     const correctAnswers: { [wordId: string]: string } = {}
@@ -306,6 +338,8 @@ Wortarten-IDs: nomen, verben, adjektive, artikel, pronomen, adverbien, präposit
         correctAnswers[word.id] = word.correctWordType
       }
     })
+
+    console.log(`📚 Task with explanations: ${words.filter(w => w.explanation).length}/${words.length} words have explanations`)
 
     return {
       id: this.generateId(),

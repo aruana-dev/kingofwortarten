@@ -269,35 +269,45 @@ export default function GameBoard({
               }
               
               return (
-                <div key={word.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <span className="font-medium">{word.text}</span>
-                  <div className="flex items-center space-x-2">
-                    {answer && (
-                      <span className={`px-2 py-1 rounded text-sm ${getWordTypeColor(answer)}`}>
-                        {WORD_TYPES[answer as keyof typeof WORD_TYPES]?.label}
-                      </span>
-                    )}
-                    {isCorrect ? (
-                      <div className="flex items-center space-x-1">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        {answer === 'andere' && actualWordType && (
-                          <span className="text-xs text-gray-600">
-                            (eigentlich: {WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-1">
-                        <XCircle className="w-5 h-5 text-red-600" />
-                        <span className="text-sm text-gray-600">
-                          {correctAnswer 
-                            ? WORD_TYPES[correctAnswer as keyof typeof WORD_TYPES]?.label
-                            : `Andere Wortart (${WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})`
-                          }
+                <div key={word.id} className="p-3 bg-gray-50 rounded space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{word.text}</span>
+                    <div className="flex items-center space-x-2">
+                      {answer && (
+                        <span className={`px-2 py-1 rounded text-sm ${getWordTypeColor(answer)}`}>
+                          {WORD_TYPES[answer as keyof typeof WORD_TYPES]?.label}
                         </span>
-                      </div>
-                    )}
+                      )}
+                      {isCorrect ? (
+                        <div className="flex items-center space-x-1">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          {answer === 'andere' && actualWordType && (
+                            <span className="text-xs text-gray-600">
+                              (eigentlich: {WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-1">
+                          <XCircle className="w-5 h-5 text-red-600" />
+                          <span className="text-sm text-gray-600">
+                            {correctAnswer 
+                              ? WORD_TYPES[correctAnswer as keyof typeof WORD_TYPES]?.label
+                              : `Andere Wortart (${WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})`
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  {/* Show explanation for incorrect answers */}
+                  {!isCorrect && word.explanation && (
+                    <div className="pl-4 pr-2 py-2 bg-blue-50 border-l-4 border-blue-400 rounded-r">
+                      <p className="text-sm text-blue-900">
+                        <span className="font-semibold">💡 Erklärung:</span> {word.explanation}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )
             })}
