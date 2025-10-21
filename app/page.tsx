@@ -282,13 +282,44 @@ function TeacherInterface() {
               {getAvailableOptions().map(option => {
                 const isSelected = gameConfig.wordTypes.includes(option.id)
                 
+                // Generate complete class strings for Tailwind JIT
+                const getButtonClasses = () => {
+                  if (!isSelected) {
+                    return 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  }
+                  
+                  // Map each option to its specific color classes
+                  const colorMap: { [key: string]: string } = {
+                    // Wortarten
+                    'nomen': 'bg-blue-500 text-white border-blue-500',
+                    'verben': 'bg-green-500 text-white border-green-500',
+                    'adjektive': 'bg-yellow-500 text-white border-yellow-500',
+                    'artikel': 'bg-purple-500 text-white border-purple-500',
+                    'pronomen': 'bg-pink-500 text-white border-pink-500',
+                    'adverbien': 'bg-indigo-500 text-white border-indigo-500',
+                    'präpositionen': 'bg-red-500 text-white border-red-500',
+                    'konjunktionen': 'bg-orange-500 text-white border-orange-500',
+                    // Satzglieder
+                    'subjekt': 'bg-blue-500 text-white border-blue-500',
+                    'prädikat': 'bg-green-500 text-white border-green-500',
+                    'objekt': 'bg-yellow-500 text-white border-yellow-500',
+                    'adverbiale': 'bg-purple-500 text-white border-purple-500',
+                    'attribut': 'bg-pink-500 text-white border-pink-500',
+                    // Fälle
+                    'nominativ': 'bg-blue-500 text-white border-blue-500',
+                    'genitiv': 'bg-green-500 text-white border-green-500',
+                    'dativ': 'bg-yellow-500 text-white border-yellow-500',
+                    'akkusativ': 'bg-red-500 text-white border-red-500',
+                  }
+                  
+                  return colorMap[option.id] || 'bg-gray-500 text-white border-gray-500'
+                }
+                
                 return (
                   <button
                     key={option.id}
                     onClick={() => toggleWordType(option.id)}
-                    className={`p-3 rounded-lg border-2 transition-all font-semibold ${
-                      isSelected ? option.color : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`p-3 rounded-lg border-2 transition-all font-semibold ${getButtonClasses()}`}
                   >
                     {option.label}
                   </button>
