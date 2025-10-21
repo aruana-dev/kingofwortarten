@@ -26,17 +26,133 @@ export class OpenAIGenerator {
   }
 
   private async generateSingleTask(config: GameConfig): Promise<GameTask> {
-    const data = await this.callOpenAI(config)
-    const openAITask = await this.parseOpenAIResponse(data, config)
+    console.log('🔄 Starting double-validation process...')
     
-    console.log(`📝 GPT-5 generated sentence: "${openAITask.sentence}"`)
-    console.log(`📊 GPT-5 classified ${openAITask.words.length} words`)
+    // First attempt
+    console.log('   Attempt 1/2...')
+    const data1 = await this.callOpenAI(config)
+    const task1 = await this.parseOpenAIResponse(data1, config)
     
-    // With GPT-5 + clear glossary, we use GPT-5 classification directly
-    // No need for POS Tagger anymore - GPT-5 is precise enough!
-    console.log(`✅ Using GPT-5 classification (POS Tagger disabled)`)
+    // Second attempt (independent)
+    console.log('   Attempt 2/2...')
+    const data2 = await this.callOpenAI(config)
+    const task2 = await this.parseOpenAIResponse(data2, config)
     
-    return openAITask
+    console.log(`📝 Sentence 1: "${task1.sentence}"`)
+    console.log(`📝 Sentence 2: "${task2.sentence}"`)
+    
+    // Compare the two results
+    const discrepancies = this.compareResults(task1, task2)
+    
+    if (discrepancies.length === 0) {
+      console.log('✅ Both attempts match perfectly! Using result.')
+      return task1
+    }
+    
+    console.log(`⚠️ Found ${discrepancies.length} discrepancies between attempts:`)
+    discrepancies.forEach(d => console.log(`   - ${d}`))
+    
+    // Third attempt as tiebreaker
+    console.log('   Attempt 3/3 (tiebreaker)...')
+    const data3 = await this.callOpenAI(config)
+    const task3 = await this.parseOpenAIResponse(data3, config)
+    
+    console.log(`📝 Sentence 3: "${task3.sentence}"`)
+    
+    // Use majority voting for final result
+    const finalTask = this.resolveTiebreaker(task1, task2, task3)
+    console.log(`✅ Using tiebreaker result: "${finalTask.sentence}"`)
+    
+    return finalTask
+  }
+  
+  private compareResults(task1: GameTask, task2: GameTask): string[] {
+    const discrepancies: string[] = []
+    
+    // If sentences are different, they're completely different tasks
+    if (task1.sentence !== task2.sentence) {
+      discrepancies.push(`Different sentences: "${task1.sentence}" vs "${task2.sentence}"`)
+      return discrepancies
+    }
+    
+    // Same sentence, compare word classifications
+    if (task1.words.length !== task2.words.length) {
+      discrepancies.push(`Different word counts: ${task1.words.length} vs ${task2.words.length}`)
+      return discrepancies
+    }
+    
+    // Compare each word's classification
+    for (let i = 0; i < task1.words.length; i++) {
+      const word1 = task1.words[i]
+      const word2 = task2.words[i]
+      
+      if (word1.text !== word2.text) {
+        discrepancies.push(`Word ${i}: "${word1.text}" vs "${word2.text}"`)
+      } else if (word1.correctWordType !== word2.correctWordType) {
+        discrepancies.push(`Word "${word1.text}": ${word1.correctWordType} vs ${word2.correctWordType}`)
+      }
+    }
+    
+    return discrepancies
+  }
+  
+  private resolveTiebreaker(task1: GameTask, task2: GameTask, task3: GameTask): GameTask {
+    // If all three sentences are different, use the first one
+    if (task1.sentence !== task2.sentence && task2.sentence !== task3.sentence && task1.sentence !== task3.sentence) {
+      console.log('   → All three different, using first')
+      return task1
+    }
+    
+    // If two sentences match, use that one
+    if (task1.sentence === task2.sentence) {
+      console.log('   → Sentence 1 & 2 match')
+      return this.mergeTasks(task1, task2, task3)
+    }
+    if (task1.sentence === task3.sentence) {
+      console.log('   → Sentence 1 & 3 match')
+      return this.mergeTasks(task1, task3, task2)
+    }
+    if (task2.sentence === task3.sentence) {
+      console.log('   → Sentence 2 & 3 match')
+      return this.mergeTasks(task2, task3, task1)
+    }
+    
+    // Fallback: use first
+    console.log('   → No clear match, using first')
+    return task1
+  }
+  
+  private mergeTasks(primary: GameTask, secondary: GameTask, tertiary: GameTask): GameTask {
+    // Use primary as base, but resolve word type conflicts with majority voting
+    const mergedWords = primary.words.map((word, i) => {
+      const secondaryWord = secondary.words[i]
+      const tertiaryWord = tertiary.words[i]
+      
+      // If primary and secondary agree, use that
+      if (word.correctWordType === secondaryWord?.correctWordType) {
+        return word
+      }
+      
+      // If primary and tertiary agree, use primary
+      if (word.correctWordType === tertiaryWord?.correctWordType) {
+        return word
+      }
+      
+      // If secondary and tertiary agree, use secondary
+      if (secondaryWord?.correctWordType === tertiaryWord?.correctWordType) {
+        console.log(`   → Word "${word.text}": majority votes ${secondaryWord.correctWordType} (was ${word.correctWordType})`)
+        return { ...word, correctWordType: secondaryWord.correctWordType }
+      }
+      
+      // No agreement, keep primary
+      console.log(`   → Word "${word.text}": no majority, keeping ${word.correctWordType}`)
+      return word
+    })
+    
+    return {
+      ...primary,
+      words: mergedWords
+    }
   }
   
   private countWordsInSentence(sentence: string): number {
