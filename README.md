@@ -1,6 +1,6 @@
-# 👑 KingOfWortarten
+# 👑 Deutsch-Profi
 
-**Interaktives Lernspiel für deutsche Wortarten** - ähnlich wie Kahoot, speziell für den Deutschunterricht.
+**Interaktives Lernspiel für Wortarten, Satzglieder und Fälle** - ähnlich wie Kahoot, speziell für den Deutschunterricht.
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)

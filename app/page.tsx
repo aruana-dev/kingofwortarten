@@ -5,7 +5,7 @@ import { Crown, Users, BookOpen } from 'lucide-react'
 import GameBoard from '@/components/GameBoard'
 import TeacherDisplay from '@/components/TeacherDisplay'
 import Leaderboard from '@/components/Leaderboard'
-import { GameConfig, Player, GameTask, WORD_TYPES } from '@/types'
+import { GameConfig, Player, GameTask, GameMode, WORD_TYPES, SATZGLIEDER, FÄLLE } from '@/types'
 
 export default function Home() {
   const [role, setRole] = useState<'teacher' | 'student' | null>(null)
@@ -23,8 +23,8 @@ export default function Home() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <Crown className="w-16 h-16 text-primary-600 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">KingOfWortarten</h1>
-          <p className="text-gray-600">Lerne deutsche Wortarten spielerisch</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Deutsch-Profi</h1>
+          <p className="text-gray-600">Lerne Wortarten, Satzglieder und Fälle spielerisch</p>
         </div>
 
         <div className="space-y-4">
@@ -66,6 +66,7 @@ export default function Home() {
 function TeacherInterface() {
   const [step, setStep] = useState<'config' | 'session' | 'game' | 'results'>('config')
   const [gameConfig, setGameConfig] = useState<GameConfig>({
+    gameMode: 'wortarten',
     wordTypes: [],
     taskCount: 10,
     difficulty: 'medium',
@@ -207,6 +208,29 @@ function TeacherInterface() {
     }))
   }
 
+  // Get the available options based on game mode
+  const getAvailableOptions = () => {
+    switch (gameConfig.gameMode) {
+      case 'wortarten':
+        return Object.values(WORD_TYPES).filter(type => type.id !== 'andere')
+      case 'satzglieder':
+        return Object.values(SATZGLIEDER).filter(type => type.id !== 'andere')
+      case 'fall':
+        return Object.values(FÄLLE).filter(type => type.id !== 'andere')
+      default:
+        return []
+    }
+  }
+
+  const getOptionLabel = () => {
+    switch (gameConfig.gameMode) {
+      case 'wortarten': return 'Wortarten'
+      case 'satzglieder': return 'Satzglieder'
+      case 'fall': return 'Fälle'
+      default: return 'Optionen'
+    }
+  }
+
   if (step === 'config') {
     return (
       <div className="min-h-screen p-4">
@@ -217,43 +241,59 @@ function TeacherInterface() {
           </div>
 
           <div className="card mb-6">
-            <h3 className="text-lg font-semibold mb-4">Wortarten auswählen</h3>
+            <h3 className="text-lg font-semibold mb-4">Spielvariante wählen</h3>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => setGameConfig(prev => ({ ...prev, gameMode: 'wortarten', wordTypes: [] }))}
+                className={`p-4 rounded-lg border-2 transition-all font-semibold ${
+                  gameConfig.gameMode === 'wortarten'
+                    ? 'bg-blue-500 text-white border-blue-500'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Wortarten bestimmen
+              </button>
+              <button
+                onClick={() => setGameConfig(prev => ({ ...prev, gameMode: 'satzglieder', wordTypes: [] }))}
+                className={`p-4 rounded-lg border-2 transition-all font-semibold ${
+                  gameConfig.gameMode === 'satzglieder'
+                    ? 'bg-green-500 text-white border-green-500'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Satzglieder bestimmen
+              </button>
+              <button
+                onClick={() => setGameConfig(prev => ({ ...prev, gameMode: 'fall', wordTypes: [] }))}
+                className={`p-4 rounded-lg border-2 transition-all font-semibold ${
+                  gameConfig.gameMode === 'fall'
+                    ? 'bg-yellow-500 text-white border-yellow-500'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Fall bestimmen
+              </button>
+            </div>
+          </div>
+
+          <div className="card mb-6">
+            <h3 className="text-lg font-semibold mb-4">{getOptionLabel()} auswählen</h3>
             <div className="grid grid-cols-2 gap-3">
-              {Object.values(WORD_TYPES)
-                .filter(wordType => wordType.id !== 'andere') // Don't show "Andere Wortart" in selection
-                .map(wordType => {
-                  const isSelected = gameConfig.wordTypes.includes(wordType.id)
-                  
-                  // Map word type IDs to specific Tailwind classes (must be complete strings for Tailwind to detect them)
-                  const getButtonClasses = () => {
-                    if (!isSelected) {
-                      return 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                    }
-                    
-                    switch (wordType.id) {
-                      case 'nomen': return 'bg-blue-500 text-white border-blue-500'
-                      case 'verben': return 'bg-green-500 text-white border-green-500'
-                      case 'adjektive': return 'bg-yellow-500 text-white border-yellow-500'
-                      case 'artikel': return 'bg-purple-500 text-white border-purple-500'
-                      case 'pronomen': return 'bg-pink-500 text-white border-pink-500'
-                      case 'adverbien': return 'bg-indigo-500 text-white border-indigo-500'
-                      case 'präpositionen': return 'bg-red-500 text-white border-red-500'
-                      case 'konjunktionen': return 'bg-orange-500 text-white border-orange-500'
-                      default: return 'bg-gray-500 text-white border-gray-500'
-                    }
-                  }
-                  
-                  return (
-                    <button
-                      key={wordType.id}
-                      onClick={() => toggleWordType(wordType.id)}
-                      className={`p-3 rounded-lg border-2 transition-all font-semibold ${getButtonClasses()}`}
-                    >
-                      {wordType.label}
-                    </button>
-                  )
-                })
-              }
+              {getAvailableOptions().map(option => {
+                const isSelected = gameConfig.wordTypes.includes(option.id)
+                
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => toggleWordType(option.id)}
+                    className={`p-3 rounded-lg border-2 transition-all font-semibold ${
+                      isSelected ? option.color : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

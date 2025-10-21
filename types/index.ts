@@ -1,5 +1,8 @@
+export type GameMode = 'wortarten' | 'satzglieder' | 'fall'
+
 export interface GameConfig {
-  wordTypes: string[]
+  gameMode: GameMode
+  wordTypes: string[] // For 'wortarten' mode, or 'satzglieder'/'fall' options
   taskCount: number
   difficulty: 'easy' | 'medium' | 'hard'
   timeLimit: number | null
@@ -129,6 +132,100 @@ export const WORD_TYPES = {
   andere: { 
     id: 'andere', 
     label: 'Andere Wortart', 
+    color: 'bg-gray-500 text-white',
+    lightColor: 'bg-gray-200 text-gray-800',
+    borderColor: 'border-gray-500',
+    hoverColor: 'hover:bg-gray-600'
+  },
+} as const
+
+export const SATZGLIEDER = {
+  subjekt: {
+    id: 'subjekt',
+    label: 'Subjekt',
+    color: 'bg-blue-500 text-white',
+    lightColor: 'bg-blue-100 text-blue-800',
+    borderColor: 'border-blue-500',
+    hoverColor: 'hover:bg-blue-600'
+  },
+  prädikat: {
+    id: 'prädikat',
+    label: 'Prädikat',
+    color: 'bg-green-500 text-white',
+    lightColor: 'bg-green-100 text-green-800',
+    borderColor: 'border-green-500',
+    hoverColor: 'hover:bg-green-600'
+  },
+  objekt: {
+    id: 'objekt',
+    label: 'Objekt',
+    color: 'bg-yellow-500 text-white',
+    lightColor: 'bg-yellow-100 text-yellow-800',
+    borderColor: 'border-yellow-500',
+    hoverColor: 'hover:bg-yellow-600'
+  },
+  adverbiale: {
+    id: 'adverbiale',
+    label: 'Adverbiale',
+    color: 'bg-purple-500 text-white',
+    lightColor: 'bg-purple-100 text-purple-800',
+    borderColor: 'border-purple-500',
+    hoverColor: 'hover:bg-purple-600'
+  },
+  attribut: {
+    id: 'attribut',
+    label: 'Attribut',
+    color: 'bg-pink-500 text-white',
+    lightColor: 'bg-pink-100 text-pink-800',
+    borderColor: 'border-pink-500',
+    hoverColor: 'hover:bg-pink-600'
+  },
+  andere: {
+    id: 'andere',
+    label: 'Anderes Satzglied',
+    color: 'bg-gray-500 text-white',
+    lightColor: 'bg-gray-200 text-gray-800',
+    borderColor: 'border-gray-500',
+    hoverColor: 'hover:bg-gray-600'
+  },
+} as const
+
+export const FÄLLE = {
+  nominativ: {
+    id: 'nominativ',
+    label: 'Nominativ (1. Fall)',
+    color: 'bg-blue-500 text-white',
+    lightColor: 'bg-blue-100 text-blue-800',
+    borderColor: 'border-blue-500',
+    hoverColor: 'hover:bg-blue-600'
+  },
+  genitiv: {
+    id: 'genitiv',
+    label: 'Genitiv (2. Fall)',
+    color: 'bg-green-500 text-white',
+    lightColor: 'bg-green-100 text-green-800',
+    borderColor: 'border-green-500',
+    hoverColor: 'hover:bg-green-600'
+  },
+  dativ: {
+    id: 'dativ',
+    label: 'Dativ (3. Fall)',
+    color: 'bg-yellow-500 text-white',
+    lightColor: 'bg-yellow-100 text-yellow-800',
+    borderColor: 'border-yellow-500',
+    hoverColor: 'hover:bg-yellow-600'
+  },
+  akkusativ: {
+    id: 'akkusativ',
+    label: 'Akkusativ (4. Fall)',
+    color: 'bg-red-500 text-white',
+    lightColor: 'bg-red-100 text-red-800',
+    borderColor: 'border-red-500',
+    hoverColor: 'hover:bg-red-600'
+  },
+  andere: {
+    id: 'andere',
+    label: 'Anderer Fall',
     color: 'bg-gray-500 text-white',
     lightColor: 'bg-gray-200 text-gray-800',
     borderColor: 'border-gray-500',

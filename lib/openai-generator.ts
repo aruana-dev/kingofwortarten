@@ -350,122 +350,18 @@ export class OpenAIGenerator {
     const model = process.env.OPENAI_MODEL || 'gpt-4o'
     const maxTokensEnv = Number(process.env.OPENAI_MAX_COMPLETION_TOKENS || '800')
     
-    const prompt = `Create a German sentence for a word type learning game.
-
-REQUIREMENTS:
-- Difficulty: ${difficulty}
-- Required word types: ${wordTypesList}
-- Sentence length: 5-12 words
-- Use varied sentence structures
-- Grammatically correct German
-
-CRITICAL: WORD TYPE CLASSIFICATION RULES
-Use EXACTLY these word type IDs (lowercase, no variations):
-
-1. "nomen" = NOUNS
-   - All nouns (people, animals, things, abstract concepts)
-   - Proper nouns (names, places)
-   - Examples: Hund, Katze, Berlin, Liebe, Auto
-
-2. "verben" = VERBS
-   - ALL verb forms (infinitive, conjugated, participles)
-   - Auxiliary verbs (sein, haben, werden)
-   - Modal verbs (können, müssen, wollen)
-   - Examples: laufen, läuft, gelaufen, ist, hatte, wird
-
-3. "adjektive" = ADJECTIVES ONLY
-   - Descriptive words that modify nouns
-   - Can be declined or undeclined
-   - Examples: groß, schön, alt, neue, guten
-   - NOT adverbs! (see below)
-
-4. "artikel" = ARTICLES
-   - Definite: der, die, das, den, dem, des
-   - Indefinite: ein, eine, einen, einem, eines
-   - Examples: der, die, das, ein, eine
-
-5. "pronomen" = ALL PRONOUNS (no subcategories!)
-   - Personal: ich, du, er, sie, es, wir, ihr, sie
-   - Possessive: mein, dein, sein, ihr, unser
-   - Demonstrative: dieser, jener, solcher
-   - Relative: der, die, das (when relative)
-   - Interrogative: wer, was, welcher
-   - Indefinite: man, jemand, niemand, etwas
-   - Reflexive: mich, dich, sich
-   - Examples: ich, mein, dieser, wer, man, sich
-
-6. "adverbien" = ADVERBS
-   - Words that modify verbs, adjectives, or other adverbs
-   - Answer: how? when? where? why?
-   - Examples: schnell, heute, hier, deshalb, sehr, oft
-   - NOT adjectives! (adjectives modify nouns)
-
-7. "präpositionen" = PREPOSITIONS
-   - Words that show relationships (place, time, direction)
-   - Examples: in, auf, unter, mit, nach, zu, von, für
-
-8. "konjunktionen" = CONJUNCTIONS
-   - Coordinating: und, oder, aber, denn
-   - Subordinating: weil, dass, wenn, obwohl, während
-   - Examples: und, aber, weil, dass, wenn
-
-IMPORTANT DISAMBIGUATION:
-- "schnell" when describing HOW something happens = adverbien (Der Hund läuft schnell)
-- "schnell" when describing a noun = adjektive (Der schnelle Hund)
-- "sein/haben/werden" = verben (always, even as auxiliary)
-- All pronoun types = pronomen (no subcategories!)
-
-OUTPUT FORMAT (JSON only, no markdown):
-CRITICAL RULES:
-1. Include ALL words from the sentence in the "words" array, not just the selected word types
-2. Do NOT include punctuation (commas, periods, etc.) as separate words
-3. Words should be the actual text without punctuation
-4. In explanations, put the word itself in quotation marks
-
-For words that match the selected word types (${wordTypesList}), provide:
-- "wordType": the correct word type ID
-- "explanation": a brief, child-friendly explanation (max 2 sentences) with the word in quotes
-
-For words that DON'T match the selected word types, provide:
-- "wordType": the correct word type ID (even if not selected)
-- "explanation": omit or leave empty
-
-Example for sentence "Der große Hund läuft schnell." with selected types: nomen, adjektive
-{
-  "sentence": "Der große Hund läuft schnell.",
-  "words": [
-    {
-      "text": "Der",
-      "wordType": "artikel"
-    },
-    {
-      "text": "große",
-      "wordType": "adjektive",
-      "explanation": "\"Große\" ist ein Adjektiv, weil es das Nomen 'Hund' näher beschreibt. Adjektive beantworten die Frage 'Wie ist etwas?'"
-    },
-    {
-      "text": "Hund",
-      "wordType": "nomen",
-      "explanation": "\"Hund\" ist ein Nomen, weil es ein Lebewesen bezeichnet. Nomen schreibt man groß und kann oft 'der/die/das' davor setzen."
-    },
-    {
-      "text": "läuft",
-      "wordType": "verben"
-    },
-    {
-      "text": "schnell",
-      "wordType": "adverbien"
+    // Generate prompt based on game mode
+    let prompt = ''
+    
+    if (config.gameMode === 'wortarten') {
+      prompt = this.generateWortartenPrompt(config, wordTypesList, difficulty)
+    } else if (config.gameMode === 'satzglieder') {
+      prompt = this.generateSatzgliederPrompt(config, wordTypesList, difficulty)
+    } else if (config.gameMode === 'fall') {
+      prompt = this.generateFallPrompt(config, wordTypesList, difficulty)
+    } else {
+      throw new Error(`Unknown game mode: ${config.gameMode}`)
     }
-  ]
-}
-
-IMPORTANT: 
-- The words array MUST contain ALL words from the sentence, in order
-- NO punctuation marks as separate words (no commas, periods, etc.)
-- Always put the word itself in quotation marks in the explanation
-
-CRITICAL: Respond ONLY with valid JSON. No reasoning text, no explanations, no markdown.
-Start your response immediately with the opening brace: {`
 
     // Add timeout to prevent infinite waits
     const controller = new AbortController()
@@ -776,5 +672,157 @@ Start your response immediately with the opening brace: {`
 
   private generateId(): string {
     return Math.random().toString(36).substring(2) + Date.now().toString(36)
+  }
+
+  private generateWortartenPrompt(config: GameConfig, wordTypesList: string, difficulty: string): string {
+    return `Create a German sentence for a word type learning game.
+
+REQUIREMENTS:
+- Difficulty: ${difficulty}
+- Required word types: ${wordTypesList}
+- Sentence length: 5-12 words
+- Use varied sentence structures
+- Grammatically correct German
+
+CRITICAL: WORD TYPE CLASSIFICATION RULES
+Use EXACTLY these word type IDs (lowercase, no variations):
+
+1. "nomen" = NOUNS
+2. "verben" = VERBS
+3. "adjektive" = ADJECTIVES ONLY
+4. "artikel" = ARTICLES
+5. "pronomen" = ALL PRONOUNS (no subcategories!)
+6. "adverbien" = ADVERBS
+7. "präpositionen" = PREPOSITIONS
+8. "konjunktionen" = CONJUNCTIONS
+
+OUTPUT FORMAT (JSON only, no markdown):
+CRITICAL RULES:
+1. Include ALL words from the sentence in the "words" array
+2. Do NOT include punctuation as separate words
+3. In explanations, put the word itself in quotation marks
+
+For words that match the selected word types (${wordTypesList}), provide:
+- "wordType": the correct word type ID
+- "explanation": a brief explanation with the word in quotes
+
+For words that DON'T match the selected word types, provide:
+- "wordType": the correct word type ID
+- "explanation": omit or leave empty
+
+Example: { "sentence": "Der Hund läuft.", "words": [...] }
+
+CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
+  }
+
+  private generateSatzgliederPrompt(config: GameConfig, wordTypesList: string, difficulty: string): string {
+    return `Create a German sentence for a sentence part identification learning game.
+
+REQUIREMENTS:
+- Difficulty: ${difficulty}
+- Required sentence parts: ${wordTypesList}
+- Sentence length: 5-12 words
+- Use varied sentence structures
+- Grammatically correct German
+
+CRITICAL: SENTENCE PART CLASSIFICATION RULES
+Use EXACTLY these sentence part IDs (lowercase, no variations):
+
+1. "subjekt" = SUBJECT (wer/was macht etwas?)
+   - The agent performing the action
+   - Usually nominative case
+   - Examples: "Der Hund", "Ich", "Die Kinder"
+
+2. "prädikat" = PREDICATE (was tut jemand?)
+   - The verb/action in the sentence
+   - Can be single verb or verb phrase
+   - Examples: "läuft", "hat gelesen", "wird kommen"
+
+3. "objekt" = OBJECT (wen/was/wem?)
+   - Direct object (akkusativ): wen/was?
+   - Indirect object (dativ): wem?
+   - Genitive object: wessen?
+   - Examples: "den Ball", "dem Kind", "des Vaters"
+
+4. "adverbiale" = ADVERBIAL (wie/wo/wann/warum?)
+   - Time: wann? (heute, gestern)
+   - Place: wo? (hier, im Park)
+   - Manner: wie? (schnell, langsam)
+   - Reason: warum? (deshalb, weil)
+
+5. "attribut" = ATTRIBUTE (beschreibt ein Nomen näher)
+   - Adjective attribute: "große" in "der große Hund"
+   - Genitive attribute: "des Vaters" in "das Auto des Vaters"
+   - Prepositional attribute: "im Park" in "der Hund im Park"
+
+OUTPUT FORMAT (JSON only, no markdown):
+CRITICAL RULES:
+1. Include ALL words/phrases from the sentence in the "words" array
+2. Do NOT include punctuation as separate words
+3. In explanations, put the word/phrase itself in quotation marks
+4. Group words that belong to the same sentence part together
+
+For words/phrases that match the selected sentence parts (${wordTypesList}), provide:
+- "wordType": the correct sentence part ID
+- "explanation": a brief explanation with the phrase in quotes
+
+Example: { "sentence": "Der Hund läuft schnell.", "words": [{"text": "Der Hund", "wordType": "subjekt", "explanation": "..."}, {"text": "läuft", "wordType": "prädikat"}, ...] }
+
+CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
+  }
+
+  private generateFallPrompt(config: GameConfig, wordTypesList: string, difficulty: string): string {
+    return `Create a German sentence for a grammatical case identification learning game.
+
+REQUIREMENTS:
+- Difficulty: ${difficulty}
+- Required cases: ${wordTypesList}
+- Sentence length: 5-12 words
+- Use varied sentence structures
+- Grammatically correct German
+- Include multiple nouns/pronouns in different cases
+
+CRITICAL: GRAMMATICAL CASE CLASSIFICATION RULES
+Use EXACTLY these case IDs (lowercase, no variations):
+
+1. "nominativ" = NOMINATIVE (1. Fall)
+   - Question: wer/was?
+   - Subject of the sentence
+   - Examples: "der Hund", "ein Mann", "die Frau"
+
+2. "genitiv" = GENITIVE (2. Fall)
+   - Question: wessen?
+   - Possession, belonging
+   - Examples: "des Hundes", "eines Mannes", "der Frau"
+
+3. "dativ" = DATIVE (3. Fall)
+   - Question: wem?
+   - Indirect object
+   - Examples: "dem Hund", "einem Mann", "der Frau"
+
+4. "akkusativ" = ACCUSATIVE (4. Fall)
+   - Question: wen/was?
+   - Direct object
+   - Examples: "den Hund", "einen Mann", "die Frau"
+
+OUTPUT FORMAT (JSON only, no markdown):
+CRITICAL RULES:
+1. Include ALL words from the sentence in the "words" array
+2. Do NOT include punctuation as separate words
+3. In explanations, put the word itself in quotation marks
+4. Only classify nouns, pronouns, and their articles
+5. For words that are NOT nouns/pronouns/articles, use "andere" as wordType
+
+For words that match the selected cases (${wordTypesList}), provide:
+- "wordType": the correct case ID
+- "explanation": a brief explanation with the word in quotes, including the case question
+
+For words that DON'T match (verbs, adjectives, etc.), provide:
+- "wordType": "andere"
+- "explanation": omit or leave empty
+
+Example: { "sentence": "Der Mann gibt dem Kind einen Ball.", "words": [{"text": "Der Mann", "wordType": "nominativ", "explanation": "\\"Der Mann\\" steht im Nominativ (1. Fall), weil es das Subjekt ist (wer?)."}, {"text": "gibt", "wordType": "andere"}, ...] }
+
+CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
   }
 }

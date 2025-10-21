@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'KingOfWortarten - Wortarten lernen',
-  description: 'Interaktives Lernspiel für deutsche Wortarten',
+  title: 'Deutsch-Profi - Interaktives Lernen',
+  description: 'Interaktives Lernspiel für Wortarten, Satzglieder und Fälle',
 }
 
 export default function RootLayout({
