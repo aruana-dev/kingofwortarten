@@ -92,15 +92,23 @@ export default function GameBoard({
   }
 
   const getWordTypeColor = (wordType: string) => {
+    if (!wordType || !TYPE_SYSTEM) return 'bg-gray-100 text-gray-800'
     return (TYPE_SYSTEM as any)[wordType]?.lightColor || 'bg-gray-100 text-gray-800'
   }
   
   const getWordTypeFullColor = (wordType: string) => {
+    if (!wordType || !TYPE_SYSTEM) return 'bg-gray-500 text-white'
     return (TYPE_SYSTEM as any)[wordType]?.color || 'bg-gray-500 text-white'
   }
   
   const getWordTypeBorderColor = (wordType: string) => {
+    if (!wordType || !TYPE_SYSTEM) return 'border-gray-500'
     return (TYPE_SYSTEM as any)[wordType]?.borderColor || 'border-gray-500'
+  }
+  
+  const getWordTypeLabel = (wordType: string) => {
+    if (!wordType || !TYPE_SYSTEM) return wordType
+    return (TYPE_SYSTEM as any)[wordType]?.label || wordType
   }
 
   const getAnswerStatus = (wordId: string) => {
@@ -143,7 +151,13 @@ export default function GameBoard({
 
       {/* Sentence */}
       <div className="card mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-center">Erkennst du die Wortarten?</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          {gameMode === 'fall' 
+            ? 'Erkennst du die Fälle?' 
+            : gameMode === 'satzglieder' 
+            ? 'Erkennst du die Satzglieder?' 
+            : 'Erkennst du die Wortarten?'}
+        </h2>
         <div className="text-2xl text-center leading-relaxed mb-4">
           {task.sentence}
         </div>
@@ -169,7 +183,7 @@ export default function GameBoard({
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Wörter zum Zuordnen:</h3>
         <p className="text-sm text-gray-600 mb-3">
-          💡 Tipp: Ordne alle Wörter den richtigen Wortarten zu!
+          💡 Tipp: Ordne alle Wörter den richtigen {gameMode === 'fall' ? 'Fällen' : gameMode === 'satzglieder' ? 'Satzgliedern' : 'Wortarten'} zu!
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           {task.words.map((word) => {
@@ -230,7 +244,7 @@ export default function GameBoard({
             }
           </div>
           <p className="text-xs text-gray-600 text-center mt-3">
-            💡 Tipp: Wenn das Wort zu keiner der angezeigten Wortarten gehört, wähle "Andere Wortart"
+            💡 Tipp: Wenn das Wort zu keiner der angezeigten {gameMode === 'fall' ? 'Fälle' : gameMode === 'satzglieder' ? 'Satzglieder' : 'Wortarten'} gehört, wähle "{gameMode === 'fall' ? 'Anderer Fall' : gameMode === 'satzglieder' ? 'Anderes Satzglied' : 'Andere Wortart'}"
           </p>
         </div>
       )}
@@ -291,7 +305,7 @@ export default function GameBoard({
                     <div className="flex items-center space-x-2">
                       {answer && (
                         <span className={`px-2 py-1 rounded text-sm ${getWordTypeColor(answer)}`}>
-                          {(TYPE_SYSTEM as any)[answer]?.label}
+                          {getWordTypeLabel(answer)}
                         </span>
                       )}
                       {isCorrect ? (
@@ -299,7 +313,7 @@ export default function GameBoard({
                           <CheckCircle className="w-5 h-5 text-green-600" />
                           {answer === 'andere' && actualWordType && (
                             <span className="text-xs text-gray-600">
-                              (eigentlich: {(TYPE_SYSTEM as any)[actualWordType]?.label || actualWordType})
+                              (eigentlich: {getWordTypeLabel(actualWordType)})
                             </span>
                           )}
                           {/* Show uncertainty warning even for correct answers */}
@@ -314,8 +328,8 @@ export default function GameBoard({
                           <XCircle className="w-5 h-5 text-red-600" />
                           <span className="text-sm text-gray-600">
                             {correctAnswer 
-                              ? (TYPE_SYSTEM as any)[correctAnswer]?.label
-                              : `Andere ${gameMode === 'fall' ? 'Fall' : gameMode === 'satzglieder' ? 'Satzglied' : 'Wortart'} (${(TYPE_SYSTEM as any)[actualWordType]?.label || actualWordType})`
+                              ? getWordTypeLabel(correctAnswer)
+                              : `Andere${gameMode === 'fall' ? 'r Fall' : gameMode === 'satzglieder' ? 's Satzglied' : ' Wortart'} (${getWordTypeLabel(actualWordType)})`
                             }
                           </span>
                           {/* Show uncertainty warning for wrong answers */}
@@ -333,8 +347,8 @@ export default function GameBoard({
                     <div className="pl-4 pr-2 py-2 bg-orange-50 border-l-4 border-orange-400 rounded-r">
                       <p className="text-sm text-orange-900">
                         <span className="font-semibold">⚠️ Unsichere Klassifizierung:</span> Die automatische Analyse ist sich nicht sicher. 
-                        POS Tagger sagt "{(TYPE_SYSTEM as any)[word.correctWordType]?.label || word.correctWordType}", 
-                        OpenAI sagt "{word.alternativeWordType ? ((TYPE_SYSTEM as any)[word.alternativeWordType]?.label || word.alternativeWordType) : 'unbekannt'}".
+                        POS Tagger sagt "{getWordTypeLabel(word.correctWordType)}", 
+                        OpenAI sagt "{word.alternativeWordType ? getWordTypeLabel(word.alternativeWordType) : 'unbekannt'}".
                         {isCorrect && " Deine Antwort wurde als richtig gewertet, aber der Computer könnte falsch liegen."}
                       </p>
                     </div>
