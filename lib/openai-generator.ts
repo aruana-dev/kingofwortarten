@@ -402,24 +402,48 @@ Other words can be omitted from the words array.`
   }
 
   private async parseOpenAIResponse(data: any, config: GameConfig): Promise<GameTask> {
-    const content = data.choices?.[0]?.message?.content || ''
+    const message = data.choices?.[0]?.message
+    const content = message?.content ?? ''
     console.log('🔍 Parsing OpenAI response...')
+    console.log('   message keys:', message ? Object.keys(message) : 'n/a')
 
     try {
       // Preferred path: strict JSON (response_format=json_object)
-      if (content.trim().length === 0) {
+      if ((typeof content === 'string' ? content.trim().length : 0) === 0) {
         // Some models put JSON into tool calls or message annotations (future-proof)
-        const first = data.choices?.[0]
-        const toolJson = first?.message?.tool_calls?.[0]?.function?.arguments
-        if (toolJson) {
+        const toolJson = message?.tool_calls?.[0]?.function?.arguments
+        if (toolJson && typeof toolJson === 'string') {
           const parsedTool = JSON.parse(toolJson)
           console.log('✅ Parsed JSON from tool_calls')
           return this.createTaskFromOpenAI(parsedTool, config.wordTypes)
         }
+
+        // Some models put structured object directly on message.parsed
+        if (message?.parsed && typeof message.parsed === 'object') {
+          console.log('✅ Parsed JSON from message.parsed')
+          return this.createTaskFromOpenAI(message.parsed, config.wordTypes)
+        }
+
+        // Some models return array content segments
+        if (Array.isArray(message?.content)) {
+          const textChunks = message.content
+            .map((c: any) => (typeof c === 'string' ? c : c?.text || c?.content || ''))
+            .join('\n')
+            .trim()
+          if (textChunks) {
+            let cj = textChunks
+            if (cj.startsWith('```')) {
+              cj = cj.replace(/^```json?\s*/, '').replace(/\s*```$/, '')
+            }
+            const parsedArr = JSON.parse(cj)
+            console.log('✅ Parsed JSON from array content')
+            return this.createTaskFromOpenAI(parsedArr, config.wordTypes)
+          }
+        }
       }
 
       // Fallback: extract JSON from content (code fence or inline)
-      let jsonContent = content.trim()
+      let jsonContent = typeof content === 'string' ? content.trim() : ''
       if (jsonContent.startsWith('```json')) {
         console.log('   Found JSON code block, extracting...')
         jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '')
@@ -428,10 +452,11 @@ Other words can be omitted from the words array.`
         jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '')
       } else {
         // Try to locate the first and last curly braces
-        const start = jsonContent.indexOf('{')
-        const end = jsonContent.lastIndexOf('}')
+        const blob = jsonContent || JSON.stringify(message || {})
+        const start = blob.indexOf('{')
+        const end = blob.lastIndexOf('}')
         if (start !== -1 && end !== -1 && end > start) {
-          jsonContent = jsonContent.slice(start, end + 1)
+          jsonContent = blob.slice(start, end + 1)
         }
       }
 
