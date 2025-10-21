@@ -416,10 +416,15 @@ IMPORTANT DISAMBIGUATION:
 - All pronoun types = pronomen (no subcategories!)
 
 OUTPUT FORMAT (JSON only, no markdown):
-CRITICAL: Include ALL words from the sentence in the "words" array, not just the selected word types!
+CRITICAL RULES:
+1. Include ALL words from the sentence in the "words" array, not just the selected word types
+2. Do NOT include punctuation (commas, periods, etc.) as separate words
+3. Words should be the actual text without punctuation
+4. In explanations, put the word itself in quotation marks
+
 For words that match the selected word types (${wordTypesList}), provide:
 - "wordType": the correct word type ID
-- "explanation": a brief, child-friendly explanation (max 2 sentences)
+- "explanation": a brief, child-friendly explanation (max 2 sentences) with the word in quotes
 
 For words that DON'T match the selected word types, provide:
 - "wordType": the correct word type ID (even if not selected)
@@ -436,12 +441,12 @@ Example for sentence "Der große Hund läuft schnell." with selected types: nome
     {
       "text": "große",
       "wordType": "adjektive",
-      "explanation": "Groß ist ein Adjektiv, weil es das Nomen 'Hund' näher beschreibt. Adjektive beantworten die Frage 'Wie ist etwas?'"
+      "explanation": "\"Große\" ist ein Adjektiv, weil es das Nomen 'Hund' näher beschreibt. Adjektive beantworten die Frage 'Wie ist etwas?'"
     },
     {
       "text": "Hund",
       "wordType": "nomen",
-      "explanation": "Hund ist ein Nomen, weil es ein Lebewesen bezeichnet. Nomen schreibt man groß und kann oft 'der/die/das' davor setzen."
+      "explanation": "\"Hund\" ist ein Nomen, weil es ein Lebewesen bezeichnet. Nomen schreibt man groß und kann oft 'der/die/das' davor setzen."
     },
     {
       "text": "läuft",
@@ -454,7 +459,10 @@ Example for sentence "Der große Hund läuft schnell." with selected types: nome
   ]
 }
 
-IMPORTANT: The words array MUST contain ALL words from the sentence, in order!
+IMPORTANT: 
+- The words array MUST contain ALL words from the sentence, in order
+- NO punctuation marks as separate words (no commas, periods, etc.)
+- Always put the word itself in quotation marks in the explanation
 
 CRITICAL: Respond ONLY with valid JSON. No reasoning text, no explanations, no markdown.
 Start your response immediately with the opening brace: {`
@@ -600,16 +608,33 @@ Start your response immediately with the opening brace: {`
   }
 
   private createTaskFromOpenAI(data: any, wordTypes: string[]): GameTask {
-    const words: Word[] = data.words.map((w: any, index: number) => ({
-      id: this.generateId(),
-      text: w.text.replace(/[.,!?;:]$/, ''),
-      correctWordType: w.wordType,
-      position: index,
-      explanation: w.explanation || undefined,
-      // No uncertainty tracking - we trust GPT-5 with clear glossary
-      isUncertain: false,
-      alternativeWordType: undefined
-    }))
+    // Filter out punctuation-only words and clean up text
+    const filteredWords = data.words.filter((w: any) => {
+      const cleanText = w.text.trim()
+      // Remove if it's ONLY punctuation
+      const isPunctuationOnly = /^[.,!?;:\-–—()«»""\[\]{}]+$/.test(cleanText)
+      if (isPunctuationOnly) {
+        console.log(`   🚫 Filtered out punctuation-only word: "${cleanText}"`)
+        return false
+      }
+      return true
+    })
+    
+    const words: Word[] = filteredWords.map((w: any, index: number) => {
+      // Clean the text: remove trailing punctuation
+      const cleanedText = w.text.trim().replace(/[.,!?;:]$/, '')
+      
+      return {
+        id: this.generateId(),
+        text: cleanedText,
+        correctWordType: w.wordType,
+        position: index,
+        explanation: w.explanation || undefined,
+        // No uncertainty tracking - we trust GPT-4o with clear glossary
+        isUncertain: false,
+        alternativeWordType: undefined
+      }
+    })
 
     const correctAnswers: { [wordId: string]: string } = {}
     words.forEach(word => {
