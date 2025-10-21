@@ -324,7 +324,10 @@ OUTPUT FORMAT (JSON only, no markdown):
 }
 
 ONLY include words that match the selected word types: ${wordTypesList}
-Other words can be omitted from the words array.`
+Other words can be omitted from the words array.
+
+CRITICAL: Respond ONLY with valid JSON. No reasoning text, no explanations, no markdown.
+Start your response immediately with the opening brace: {`
 
     // Add timeout to prevent infinite waits
     const controller = new AbortController()
@@ -341,7 +344,7 @@ Other words can be omitted from the words array.`
         messages: [
           {
             role: 'system',
-            content: 'Du bist ein Experte für deutsche Grammatik und Pädagogik. Erstelle präzise, lehrreiche Sätze für Wortarten-Übungen.'
+            content: 'You are a German grammar expert. Respond ONLY with valid JSON. No reasoning, no explanations, no markdown fences. Your entire response must be parseable as JSON and start with { and end with }.'
           },
           {
             role: 'user',
@@ -354,9 +357,11 @@ Other words can be omitted from the words array.`
       if (!isGpt5) {
         requestBody.temperature = 0.7
       } else {
-        console.log('ℹ️ GPT-5 detected -> omit temperature (defaults to 1)')
-        // Force strict JSON output for GPT-5
+        console.log('ℹ️ GPT-5 detected -> enforce strict JSON output (no reasoning tokens)')
+        // Force strict JSON output for GPT-5 WITHOUT reasoning
         requestBody.response_format = { type: 'json_object' }
+        // Increase max tokens to ensure complete JSON
+        requestBody.max_completion_tokens = Math.max(maxTokensEnv, 1200)
       }
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
