@@ -871,10 +871,10 @@ CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
 REQUIREMENTS:
 - Difficulty: ${difficulty}
 - Required cases: ${wordTypesList}
-- Sentence length: 5-12 words
+- Sentence length: 6-15 words
 - Use varied sentence structures
 - Grammatically correct German
-- Include multiple nouns/pronouns in different cases
+- Include multiple nouns/pronouns with articles in different cases
 
 CRITICAL: GRAMMATICAL CASE CLASSIFICATION RULES
 Use EXACTLY these case IDs (lowercase, no variations):
@@ -882,40 +882,57 @@ Use EXACTLY these case IDs (lowercase, no variations):
 1. "nominativ" = NOMINATIVE (1. Fall)
    - Question: wer/was?
    - Subject of the sentence
-   - Examples: "der Hund", "ein Mann", "die Frau"
+   - Examples: "der Hund" (article + noun), "eine Frau", "das Kind"
+   - Articles: der, die, das, ein, eine, mein, dein, etc.
 
 2. "genitiv" = GENITIVE (2. Fall)
    - Question: wessen?
    - Possession, belonging
-   - Examples: "des Hundes", "eines Mannes", "der Frau"
+   - Examples: "des Hundes", "einer Frau", "meines Vaters"
+   - Articles: des, der, eines, einer, meines, deines, etc.
 
 3. "dativ" = DATIVE (3. Fall)
    - Question: wem?
    - Indirect object
-   - Examples: "dem Hund", "einem Mann", "der Frau"
+   - Examples: "dem Hund", "einer Frau", "meinem Vater"
+   - Articles: dem, der, den (Plural), einem, einer, meinem, etc.
 
 4. "akkusativ" = ACCUSATIVE (4. Fall)
    - Question: wen/was?
    - Direct object
-   - Examples: "den Hund", "einen Mann", "die Frau"
+   - Examples: "den Hund", "eine Frau", "meinen Vater"
+   - Articles: den, die, das, einen, eine, meinen, etc.
 
 OUTPUT FORMAT (JSON only, no markdown):
-CRITICAL RULES:
-1. Include ALL words from the sentence in the "words" array
-2. Do NOT include punctuation as separate words
-3. In explanations, put the word itself in quotation marks
-4. Only classify nouns, pronouns, and their articles
-5. For words that are NOT nouns/pronouns/articles, use "andere" as wordType
+CRITICAL RULES FOR FÄLLE MODE:
+1. Include ALL words individually in "words" array
+2. Do NOT group words (e.g., "Der Mann" should be TWO words: "Der" and "Mann")
+3. Classify ARTICLES, NOUNS, and PRONOUNS with their case
+4. For verbs, adjectives, adverbs, etc., use "andere" as wordType
+5. Put the ARTICLE in quotation marks in explanations, NOT the whole phrase
+6. Include the case question (wer/was/wem/wessen/wen) in explanations
 
-For words that match the selected cases (${wordTypesList}), provide:
-- "wordType": the correct case ID
-- "explanation": a brief explanation with the word in quotes, including the case question
+For articles/nouns/pronouns in selected cases (${wordTypesList}):
+- "wordType": the correct case ID (nominativ, genitiv, dativ, akkusativ)
+- "explanation": brief explanation with the ARTICLE in quotes + case question
 
-For words that DON'T match (verbs, adjectives, etc.), provide:
+For other words (verbs, adjectives, prepositions, etc.):
 - "wordType": "andere"
 - "explanation": omit or leave empty
 
-Example: { "sentence": "Der Mann gibt dem Kind einen Ball.", "words": [{"text": "Der Mann", "wordType": "nominativ", "explanation": "\\"Der Mann\\" steht im Nominativ (1. Fall), weil es das Subjekt ist (wer?)."}, {"text": "gibt", "wordType": "andere"}, ...] }
+Example: 
+{
+  "sentence": "Der Mann gibt dem Kind einen Ball.",
+  "words": [
+    {"text": "Der", "wordType": "nominativ", "explanation": "\\"Der\\" steht im Nominativ (1. Fall), weil es zum Subjekt gehört (wer?)"},
+    {"text": "Mann", "wordType": "nominativ", "explanation": "\\"Mann\\" ist das Nomen im Nominativ (wer gibt?)"},
+    {"text": "gibt", "wordType": "andere"},
+    {"text": "dem", "wordType": "dativ", "explanation": "\\"dem\\" steht im Dativ (3. Fall), weil es zum indirekten Objekt gehört (wem?)"},
+    {"text": "Kind", "wordType": "dativ", "explanation": "\\"Kind\\" ist das Nomen im Dativ (wem gibt der Mann?)"},
+    {"text": "einen", "wordType": "akkusativ", "explanation": "\\"einen\\" steht im Akkusativ (4. Fall), weil es zum direkten Objekt gehört (was?)"},
+    {"text": "Ball", "wordType": "akkusativ", "explanation": "\\"Ball\\" ist das Nomen im Akkusativ (was gibt der Mann?)"}
+  ]
+}
 
 CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
   }
