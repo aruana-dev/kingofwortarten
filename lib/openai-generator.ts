@@ -228,7 +228,10 @@ export class OpenAIGenerator {
   private async callOpenAI(config: GameConfig): Promise<any> {
     const wordTypesList = config.wordTypes.join(', ')
     const difficulty = this.getDifficultyDescription(config.difficulty)
-    const model = process.env.OPENAI_MODEL || 'gpt-5'
+    // GPT-5 (o1) models are optimized for reasoning, NOT for structured JSON output
+    // They return reasoning_tokens but no content when using response_format: json_object
+    // Therefore, we use gpt-4o which is excellent for structured tasks
+    const model = process.env.OPENAI_MODEL || 'gpt-4o'
     const maxTokensEnv = Number(process.env.OPENAI_MAX_COMPLETION_TOKENS || '800')
     
     const prompt = `Create a German sentence for a word type learning game.
@@ -336,9 +339,7 @@ Start your response immediately with the opening brace: {`
     try {
       console.log(`🧠 OpenAI model selected: ${model}`)
 
-      const isGpt5 = /^gpt-5/i.test(model)
-
-      // Build request body; GPT-5 supports only default temperature
+      // Build request body for GPT-4o (optimized for structured outputs)
       const requestBody: any = {
         model,
         messages: [
@@ -351,17 +352,9 @@ Start your response immediately with the opening brace: {`
             content: prompt
           }
         ],
-        max_completion_tokens: maxTokensEnv
-      }
-
-      if (!isGpt5) {
-        requestBody.temperature = 0.7
-      } else {
-        console.log('ℹ️ GPT-5 detected -> enforce strict JSON output (no reasoning tokens)')
-        // Force strict JSON output for GPT-5 WITHOUT reasoning
-        requestBody.response_format = { type: 'json_object' }
-        // Increase max tokens to ensure complete JSON
-        requestBody.max_completion_tokens = Math.max(maxTokensEnv, 1200)
+        temperature: 0.7,
+        max_completion_tokens: maxTokensEnv,
+        response_format: { type: 'json_object' }
       }
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
