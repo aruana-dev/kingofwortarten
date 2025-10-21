@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Crown, Users, BookOpen } from 'lucide-react'
 import GameBoard from '@/components/GameBoard'
+import SatzgliederBoard from '@/components/SatzgliederBoard'
 import TeacherDisplay from '@/components/TeacherDisplay'
 import Leaderboard from '@/components/Leaderboard'
 import { GameConfig, Player, GameTask, GameMode, WORD_TYPES, SATZGLIEDER, FÄLLE } from '@/types'
@@ -605,6 +606,7 @@ function StudentInterface() {
   const [currentTask, setCurrentTask] = useState(0)
   const [tasks, setTasks] = useState<GameTask[]>([])
   const [playerAnswers, setPlayerAnswers] = useState<{ [wordId: string]: string }>({})
+  const [playerGroupings, setPlayerGroupings] = useState<{ [groupId: string]: { wordIds: string[], type: string } }>({})
   const [isGameFinished, setIsGameFinished] = useState(false)
   const [players, setPlayers] = useState<Player[]>([])
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null)
@@ -699,6 +701,7 @@ function StudentInterface() {
               // CRITICAL: Reset for new task
               setHasSubmitted(false)
               setPlayerAnswers({})
+              setPlayerGroupings({})
               setLastTaskIndex(session.currentTask)
               setCurrentTask(session.currentTask)
               
@@ -911,17 +914,29 @@ function StudentInterface() {
             <div className="lg:col-span-2">
               {currentTaskData && gameConfig && (
                 <>
-                  <GameBoard
-                    task={currentTaskData}
-                    timeLimit={undefined} // Students don't control time
-                    onAnswer={submitAnswer}
-                    onTimeUp={() => {}} // Handled by teacher
-                    onSubmit={handleSubmitTask}
-                    playerAnswers={playerAnswers}
-                    isFinished={hasSubmitted} // Disable interaction when submitted
-                    showResults={hasSubmitted} // Show results/explanations after student submits
-                    allowedWordTypes={gameConfig.wordTypes}
-                  />
+                  {gameConfig.gameMode === 'satzglieder' ? (
+                    <SatzgliederBoard
+                      task={currentTaskData}
+                      onSubmit={handleSubmitTask}
+                      playerGroupings={playerGroupings}
+                      onGroupingChange={setPlayerGroupings}
+                      isFinished={hasSubmitted}
+                      showResults={hasSubmitted}
+                      allowedWordTypes={gameConfig.wordTypes}
+                    />
+                  ) : (
+                    <GameBoard
+                      task={currentTaskData}
+                      timeLimit={undefined} // Students don't control time
+                      onAnswer={submitAnswer}
+                      onTimeUp={() => {}} // Handled by teacher
+                      onSubmit={handleSubmitTask}
+                      playerAnswers={playerAnswers}
+                      isFinished={hasSubmitted} // Disable interaction when submitted
+                      showResults={hasSubmitted} // Show results/explanations after student submits
+                      allowedWordTypes={gameConfig.wordTypes}
+                    />
+                  )}
                   {hasSubmitted && !isGameFinished && (
                     <div className="mt-4 card bg-blue-50 border-2 border-blue-200 text-center">
                       <p className="text-blue-800 font-medium">
@@ -975,6 +990,7 @@ function StudentInterface() {
                 setCurrentTask(0)
                 setTasks([])
                 setPlayerAnswers({})
+                setPlayerGroupings({})
                 setIsGameFinished(false)
                 setPlayers([])
               }}

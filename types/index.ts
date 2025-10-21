@@ -36,6 +36,8 @@ export interface GameTask {
   words: Word[]
   correctAnswers: { [wordId: string]: string }
   timeLimit?: number
+  // For Satzglieder mode: predefined sentence parts
+  sentenceParts?: SentencePart[]
 }
 
 export interface Word {
@@ -46,6 +48,15 @@ export interface Word {
   explanation?: string // OpenAI-generated explanation for learning
   isUncertain?: boolean // True if POS Tagger and OpenAI disagree
   alternativeWordType?: string // The other classification if uncertain
+}
+
+// For Satzglieder mode: a sentence part consists of multiple words
+export interface SentencePart {
+  id: string
+  wordIds: string[] // IDs of words that belong to this sentence part
+  text: string // Combined text of all words (e.g., "Der kleine Junge")
+  correctType: string // e.g., "subjekt", "prädikat"
+  explanation?: string
 }
 
 export interface PlayerAnswer {

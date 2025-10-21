@@ -444,13 +444,13 @@ export class OpenAIGenerator {
         if (toolJson && typeof toolJson === 'string') {
           const parsedTool = JSON.parse(toolJson)
           console.log('✅ Parsed JSON from tool_calls')
-          return this.createTaskFromOpenAI(parsedTool, config.wordTypes)
+          return this.createTaskFromOpenAI(parsedTool, config.wordTypes, config.gameMode)
         }
 
         // Some models put structured object directly on message.parsed
         if (message?.parsed && typeof message.parsed === 'object') {
           console.log('✅ Parsed JSON from message.parsed')
-          return this.createTaskFromOpenAI(message.parsed, config.wordTypes)
+          return this.createTaskFromOpenAI(message.parsed, config.wordTypes, config.gameMode)
         }
 
         // Some models return array content segments
@@ -466,7 +466,7 @@ export class OpenAIGenerator {
             }
             const parsedArr = JSON.parse(cj)
             console.log('✅ Parsed JSON from array content')
-            return this.createTaskFromOpenAI(parsedArr, config.wordTypes)
+            return this.createTaskFromOpenAI(parsedArr, config.wordTypes, config.gameMode)
           }
         }
       }
@@ -495,7 +495,7 @@ export class OpenAIGenerator {
       console.log('   Words:', parsed.words?.length || 0)
       console.log('   Words with explanations:', parsed.words?.filter((w: any) => w.explanation).length || 0)
 
-      return this.createTaskFromOpenAI(parsed, config.wordTypes)
+      return this.createTaskFromOpenAI(parsed, config.wordTypes, config.gameMode)
     } catch (parseError) {
       console.error('❌ Error parsing response:', parseError)
       console.error('📄 Raw content:', content)
@@ -503,7 +503,12 @@ export class OpenAIGenerator {
     }
   }
 
-  private createTaskFromOpenAI(data: any, wordTypes: string[]): GameTask {
+  private createTaskFromOpenAI(data: any, wordTypes: string[], gameMode?: string): GameTask {
+    // Special handling for Satzglieder mode
+    if (gameMode === 'satzglieder' && data.sentenceParts) {
+      return this.createSatzgliederTask(data, wordTypes)
+    }
+    
     // Filter out punctuation-only words and clean up text
     const filteredWords = data.words.filter((w: any) => {
       const cleanText = w.text.trim()
@@ -539,8 +544,8 @@ export class OpenAIGenerator {
       }
     })
 
-    console.log(`📚 GPT-5 Task: ${words.filter(w => w.explanation).length}/${words.length} words have explanations`)
-    console.log(`🎯 Confident classification (no POS Tagger comparison)`)
+    console.log(`📚 GPT Task: ${words.filter(w => w.explanation).length}/${words.length} words have explanations`)
+    console.log(`🎯 Confident classification`)
 
     return {
       id: this.generateId(),
@@ -548,6 +553,63 @@ export class OpenAIGenerator {
       words,
       correctAnswers,
       timeLimit: 20 // Default time limit
+    }
+  }
+  
+  private createSatzgliederTask(data: any, wordTypes: string[]): GameTask {
+    const sentence = data.sentence
+    
+    // Create individual words (not pre-grouped)
+    const words: Word[] = data.words.map((w: any, index: number) => {
+      const cleanedText = w.text.trim().replace(/[.,!?;:]$/, '')
+      
+      return {
+        id: this.generateId(),
+        text: cleanedText,
+        correctWordType: 'word', // Not used for Satzglieder
+        position: w.position !== undefined ? w.position : index,
+        explanation: undefined,
+        isUncertain: false,
+        alternativeWordType: undefined
+      }
+    })
+    
+    // Create sentence parts from OpenAI data
+    const sentenceParts: any[] = data.sentenceParts.map((sp: any) => {
+      // Map word indices to word IDs
+      const wordIds = sp.wordIndices.map((idx: number) => words[idx]?.id).filter((id: string) => id)
+      
+      return {
+        id: this.generateId(),
+        wordIds,
+        text: sp.text,
+        correctType: sp.type,
+        explanation: sp.explanation
+      }
+    })
+    
+    // For Satzglieder mode, correctAnswers are based on sentence parts
+    // We store which words should be grouped together
+    const correctAnswers: { [wordId: string]: string } = {}
+    
+    // Mark which words belong to which sentence part type
+    sentenceParts.forEach(part => {
+      if (wordTypes.includes(part.correctType)) {
+        part.wordIds.forEach((wordId: string) => {
+          correctAnswers[wordId] = part.correctType
+        })
+      }
+    })
+    
+    console.log(`📊 Created Satzglieder task with ${words.length} words and ${sentenceParts.length} sentence parts`)
+    
+    return {
+      id: this.generateId(),
+      sentence,
+      words,
+      correctAnswers,
+      sentenceParts,
+      timeLimit: 30 // More time for Satzglieder
     }
   }
 
@@ -756,17 +818,49 @@ Use EXACTLY these sentence part IDs (lowercase, no variations):
    - Prepositional attribute: "im Park" in "der Hund im Park"
 
 OUTPUT FORMAT (JSON only, no markdown):
-CRITICAL RULES:
-1. Include ALL words/phrases from the sentence in the "words" array
-2. Do NOT include punctuation as separate words
-3. In explanations, put the word/phrase itself in quotation marks
-4. Group words that belong to the same sentence part together
+CRITICAL RULES FOR SATZGLIEDER MODE:
+1. Return INDIVIDUAL words in "words" array (not grouped!)
+2. Return SENTENCE PARTS in separate "sentenceParts" array with word indices
+3. Do NOT include punctuation as separate words
+4. In explanations, put the sentence part itself in quotation marks
 
-For words/phrases that match the selected sentence parts (${wordTypesList}), provide:
-- "wordType": the correct sentence part ID
-- "explanation": a brief explanation with the phrase in quotes
+The response must have this structure:
+{
+  "sentence": "Der kleine Junge spielt im Garten.",
+  "words": [
+    {"text": "Der", "position": 0},
+    {"text": "kleine", "position": 1},
+    {"text": "Junge", "position": 2},
+    {"text": "spielt", "position": 3},
+    {"text": "im", "position": 4},
+    {"text": "Garten", "position": 5}
+  ],
+  "sentenceParts": [
+    {
+      "text": "Der kleine Junge",
+      "wordIndices": [0, 1, 2],
+      "type": "subjekt",
+      "explanation": "\\"Der kleine Junge\\" ist das Subjekt, weil es die Frage 'Wer spielt?' beantwortet."
+    },
+    {
+      "text": "spielt",
+      "wordIndices": [3],
+      "type": "prädikat",
+      "explanation": "\\"spielt\\" ist das Prädikat, weil es die Handlung beschreibt."
+    },
+    {
+      "text": "im Garten",
+      "wordIndices": [4, 5],
+      "type": "adverbiale",
+      "explanation": "\\"im Garten\\" ist eine Adverbiale, weil es die Frage 'Wo?' beantwortet."
+    }
+  ]
+}
 
-Example: { "sentence": "Der Hund läuft schnell.", "words": [{"text": "Der Hund", "wordType": "subjekt", "explanation": "..."}, {"text": "läuft", "wordType": "prädikat"}, ...] }
+IMPORTANT: 
+- Every word must appear in exactly ONE sentence part
+- Only include sentence parts that match the selected types: ${wordTypesList}
+- For sentence parts NOT in the selected types, include them but use type "andere"
 
 CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
   }
