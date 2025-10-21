@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Clock, CheckCircle, XCircle, HelpCircle } from 'lucide-react'
-import { GameTask, Word, WORD_TYPES } from '@/types'
+import { GameTask, Word, WORD_TYPES, SATZGLIEDER, FÄLLE, GameMode } from '@/types'
 
 interface GameBoardProps {
   task: GameTask
@@ -15,6 +15,7 @@ interface GameBoardProps {
   isFinished: boolean
   showResults?: boolean // New prop to control when to show results
   allowedWordTypes?: string[]
+  gameMode?: GameMode // NEW: to determine which type system to use
 }
 
 export default function GameBoard({ 
@@ -26,10 +27,25 @@ export default function GameBoard({
   playerAnswers,
   isFinished,
   showResults = false,
-  allowedWordTypes
+  allowedWordTypes,
+  gameMode = 'wortarten' // Default to Wortarten mode
 }: GameBoardProps) {
   const [timeLeft, setTimeLeft] = useState(timeLimit || 0)
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
+  
+  // Helper function to get the correct type system based on game mode
+  const getTypeSystem = () => {
+    switch (gameMode) {
+      case 'satzglieder':
+        return SATZGLIEDER
+      case 'fall':
+        return FÄLLE
+      default:
+        return WORD_TYPES
+    }
+  }
+  
+  const TYPE_SYSTEM = getTypeSystem()
 
   // Reset selected word when task changes
   useEffect(() => {
@@ -76,15 +92,15 @@ export default function GameBoard({
   }
 
   const getWordTypeColor = (wordType: string) => {
-    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.lightColor || 'bg-gray-100 text-gray-800'
+    return (TYPE_SYSTEM as any)[wordType]?.lightColor || 'bg-gray-100 text-gray-800'
   }
   
   const getWordTypeFullColor = (wordType: string) => {
-    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.color || 'bg-gray-500 text-white'
+    return (TYPE_SYSTEM as any)[wordType]?.color || 'bg-gray-500 text-white'
   }
   
   const getWordTypeBorderColor = (wordType: string) => {
-    return WORD_TYPES[wordType as keyof typeof WORD_TYPES]?.borderColor || 'border-gray-500'
+    return (TYPE_SYSTEM as any)[wordType]?.borderColor || 'border-gray-500'
   }
 
   const getAnswerStatus = (wordId: string) => {
@@ -275,7 +291,7 @@ export default function GameBoard({
                     <div className="flex items-center space-x-2">
                       {answer && (
                         <span className={`px-2 py-1 rounded text-sm ${getWordTypeColor(answer)}`}>
-                          {WORD_TYPES[answer as keyof typeof WORD_TYPES]?.label}
+                          {(TYPE_SYSTEM as any)[answer]?.label}
                         </span>
                       )}
                       {isCorrect ? (
@@ -283,7 +299,7 @@ export default function GameBoard({
                           <CheckCircle className="w-5 h-5 text-green-600" />
                           {answer === 'andere' && actualWordType && (
                             <span className="text-xs text-gray-600">
-                              (eigentlich: {WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})
+                              (eigentlich: {(TYPE_SYSTEM as any)[actualWordType]?.label || actualWordType})
                             </span>
                           )}
                           {/* Show uncertainty warning even for correct answers */}
@@ -298,8 +314,8 @@ export default function GameBoard({
                           <XCircle className="w-5 h-5 text-red-600" />
                           <span className="text-sm text-gray-600">
                             {correctAnswer 
-                              ? WORD_TYPES[correctAnswer as keyof typeof WORD_TYPES]?.label
-                              : `Andere Wortart (${WORD_TYPES[actualWordType as keyof typeof WORD_TYPES]?.label || actualWordType})`
+                              ? (TYPE_SYSTEM as any)[correctAnswer]?.label
+                              : `Andere ${gameMode === 'fall' ? 'Fall' : gameMode === 'satzglieder' ? 'Satzglied' : 'Wortart'} (${(TYPE_SYSTEM as any)[actualWordType]?.label || actualWordType})`
                             }
                           </span>
                           {/* Show uncertainty warning for wrong answers */}
@@ -317,8 +333,8 @@ export default function GameBoard({
                     <div className="pl-4 pr-2 py-2 bg-orange-50 border-l-4 border-orange-400 rounded-r">
                       <p className="text-sm text-orange-900">
                         <span className="font-semibold">⚠️ Unsichere Klassifizierung:</span> Die automatische Analyse ist sich nicht sicher. 
-                        POS Tagger sagt "{WORD_TYPES[word.correctWordType as keyof typeof WORD_TYPES]?.label || word.correctWordType}", 
-                        OpenAI sagt "{WORD_TYPES[word.alternativeWordType as keyof typeof WORD_TYPES]?.label || word.alternativeWordType}".
+                        POS Tagger sagt "{(TYPE_SYSTEM as any)[word.correctWordType]?.label || word.correctWordType}", 
+                        OpenAI sagt "{word.alternativeWordType ? ((TYPE_SYSTEM as any)[word.alternativeWordType]?.label || word.alternativeWordType) : 'unbekannt'}".
                         {isCorrect && " Deine Antwort wurde als richtig gewertet, aber der Computer könnte falsch liegen."}
                       </p>
                     </div>

@@ -935,6 +935,7 @@ function StudentInterface() {
                       isFinished={hasSubmitted} // Disable interaction when submitted
                       showResults={hasSubmitted} // Show results/explanations after student submits
                       allowedWordTypes={gameConfig.wordTypes}
+                      gameMode={gameConfig.gameMode}
                     />
                   )}
                   {hasSubmitted && !isGameFinished && (
