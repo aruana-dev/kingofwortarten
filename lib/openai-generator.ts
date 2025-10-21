@@ -299,19 +299,23 @@ IMPORTANT DISAMBIGUATION:
 - "sein/haben/werden" = verben (always, even as auxiliary)
 - All pronoun types = pronomen (no subcategories!)
 
-For SELECTED word types, provide a brief, child-friendly explanation (max 2 sentences):
-- Why does this word belong to this word type?
-- How can students recognize it?
-- Tip for the future
-
 OUTPUT FORMAT (JSON only, no markdown):
+CRITICAL: Include ALL words from the sentence in the "words" array, not just the selected word types!
+For words that match the selected word types (${wordTypesList}), provide:
+- "wordType": the correct word type ID
+- "explanation": a brief, child-friendly explanation (max 2 sentences)
+
+For words that DON'T match the selected word types, provide:
+- "wordType": the correct word type ID (even if not selected)
+- "explanation": omit or leave empty
+
+Example for sentence "Der große Hund läuft schnell." with selected types: nomen, adjektive
 {
   "sentence": "Der große Hund läuft schnell.",
   "words": [
     {
       "text": "Der",
-      "wordType": "artikel",
-      "explanation": "Der ist ein Artikel, weil er vor einem Nomen steht und anzeigt, dass etwas Bestimmtes gemeint ist. Artikel erkennst du, weil sie meist vor Nomen stehen."
+      "wordType": "artikel"
     },
     {
       "text": "große",
@@ -322,12 +326,19 @@ OUTPUT FORMAT (JSON only, no markdown):
       "text": "Hund",
       "wordType": "nomen",
       "explanation": "Hund ist ein Nomen, weil es ein Lebewesen bezeichnet. Nomen schreibt man groß und kann oft 'der/die/das' davor setzen."
+    },
+    {
+      "text": "läuft",
+      "wordType": "verben"
+    },
+    {
+      "text": "schnell",
+      "wordType": "adverbien"
     }
   ]
 }
 
-ONLY include words that match the selected word types: ${wordTypesList}
-Other words can be omitted from the words array.
+IMPORTANT: The words array MUST contain ALL words from the sentence, in order!
 
 CRITICAL: Respond ONLY with valid JSON. No reasoning text, no explanations, no markdown.
 Start your response immediately with the opening brace: {`
