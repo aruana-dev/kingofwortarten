@@ -1,4 +1,4 @@
-import { GameConfig, GameTask, Word } from '@/types'
+import { GameConfig, GameTask, Word, GameMode, SentencePart } from '@/types'
 
 export class OpenAIGenerator {
   private apiKey: string
@@ -504,14 +504,20 @@ export class OpenAIGenerator {
   }
 
   private createTaskFromOpenAI(data: any, wordTypes: string[], gameMode?: string): GameTask {
-    // Special handling for Satzglieder mode
-    if (gameMode === 'satzglieder' && data.sentenceParts) {
-      return this.createSatzgliederTask(data, wordTypes)
+    // Special handling for Satzglieder/Fälle mode
+    if ((gameMode === 'satzglieder' || gameMode === 'fall') && data.sentenceParts) {
+      return this.createSatzgliederTask(data, wordTypes, gameMode)
     }
     
     // Filter out punctuation-only words and clean up text
     const filteredWords = data.words.filter((w: any) => {
-      const cleanText = w.text.trim()
+      // Handle both "text" and "word" field names (OpenAI inconsistency)
+      const wordText = w.text || w.word
+      if (!wordText) {
+        console.log(`   ⚠️ Word object missing both 'text' and 'word' field:`, w)
+        return false
+      }
+      const cleanText = wordText.trim()
       // Remove if it's ONLY punctuation
       const isPunctuationOnly = /^[.,!?;:\-–—()«»""\[\]{}]+$/.test(cleanText)
       if (isPunctuationOnly) {
@@ -522,8 +528,10 @@ export class OpenAIGenerator {
     })
     
     const words: Word[] = filteredWords.map((w: any, index: number) => {
+      // Handle both "text" and "word" field names (OpenAI inconsistency)
+      const wordText = w.text || w.word
       // Clean the text: remove trailing punctuation
-      const cleanedText = w.text.trim().replace(/[.,!?;:]$/, '')
+      const cleanedText = wordText.trim().replace(/[.,!?;:]$/, '')
       
       return {
         id: this.generateId(),
@@ -556,23 +564,31 @@ export class OpenAIGenerator {
     }
   }
   
-  private createSatzgliederTask(data: any, wordTypes: string[]): GameTask {
+  private createSatzgliederTask(data: any, wordTypes: string[], gameMode: GameMode): GameTask {
     const sentence = data.sentence
     
     // Create individual words (not pre-grouped)
-    const words: Word[] = data.words.map((w: any, index: number) => {
-      const cleanedText = w.text.trim().replace(/[.,!?;:]$/, '')
-      
-      return {
-        id: this.generateId(),
-        text: cleanedText,
-        correctWordType: 'word', // Not used for Satzglieder
-        position: w.position !== undefined ? w.position : index,
-        explanation: undefined,
-        isUncertain: false,
-        alternativeWordType: undefined
-      }
-    })
+    const words: Word[] = data.words
+      .map((w: any, index: number) => {
+        // Handle both "text" and "word" field names (OpenAI inconsistency)
+        const wordText = w.text || w.word
+        if (!wordText) {
+          console.log(`   ⚠️ Word object missing both 'text' and 'word' field in sentenceParts:`, w)
+          return null
+        }
+        const cleanedText = wordText.trim().replace(/[.,!?;:]$/, '')
+        
+        return {
+          id: this.generateId(),
+          text: cleanedText,
+          correctWordType: 'word', // Not used for Satzglieder/Fälle
+          position: w.position !== undefined ? w.position : index,
+          explanation: undefined,
+          isUncertain: false,
+          alternativeWordType: undefined
+        }
+      })
+      .filter((w: Word | null): w is Word => w !== null) // Filter out null values
     
     // Create sentence parts from OpenAI data
     const sentenceParts: any[] = data.sentenceParts.map((sp: any) => {
@@ -763,16 +779,28 @@ CRITICAL RULES:
 1. Include ALL words from the sentence in the "words" array
 2. Do NOT include punctuation as separate words
 3. In explanations, put the word itself in quotation marks
+4. Use "text" field for the word, NOT "word"
 
 For words that match the selected word types (${wordTypesList}), provide:
+- "text": the word itself
 - "wordType": the correct word type ID
 - "explanation": a brief explanation with the word in quotes
 
 For words that DON'T match the selected word types, provide:
+- "text": the word itself
 - "wordType": the correct word type ID
 - "explanation": omit or leave empty
 
-Example: { "sentence": "Der Hund läuft.", "words": [...] }
+Example response structure:
+{
+  "sentence": "Der Hund läuft schnell.",
+  "words": [
+    { "text": "Der", "wordType": "artikel", "explanation": "'Der' ist ein bestimmter Artikel im Nominativ." },
+    { "text": "Hund", "wordType": "nomen", "explanation": "'Hund' ist ein Nomen." },
+    { "text": "läuft", "wordType": "verben", "explanation": "'läuft' ist ein Verb." },
+    { "text": "schnell", "wordType": "adverbien", "explanation": "'schnell' ist ein Adverb." }
+  ]
+}
 
 CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
   }
