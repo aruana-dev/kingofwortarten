@@ -5,6 +5,7 @@ import { Crown, Users, BookOpen } from 'lucide-react'
 import GameBoard from '@/components/GameBoard'
 import SatzgliederBoard from '@/components/SatzgliederBoard'
 import TeacherDisplay from '@/components/TeacherDisplay'
+import TeacherGroupDisplay from '@/components/TeacherGroupDisplay'
 import Leaderboard from '@/components/Leaderboard'
 import { GameConfig, Player, GameTask, GameMode, WORD_TYPES, SATZGLIEDER, FÄLLE } from '@/types'
 
@@ -481,16 +482,31 @@ function TeacherInterface() {
             {/* Teacher Display - nur Anzeige, keine Interaktion */}
             <div className="lg:col-span-2">
               {currentTaskData && (
-                <TeacherDisplay
-                  task={currentTaskData}
-                  timeLimit={gameConfig.timeLimit || undefined}
-                  allowedWordTypes={gameConfig.wordTypes}
-                  currentTaskNumber={currentTask + 1}
-                  totalTasks={tasks.length}
-                  players={players}
-                  showSolutions={allPlayersSubmitted}
-                  gameMode={gameConfig.gameMode}
-                />
+                <>
+                  {gameConfig.gameMode === 'satzglieder' || gameConfig.gameMode === 'fall' ? (
+                    <TeacherGroupDisplay
+                      task={currentTaskData}
+                      timeLimit={gameConfig.timeLimit || undefined}
+                      allowedWordTypes={gameConfig.wordTypes}
+                      currentTaskNumber={currentTask + 1}
+                      totalTasks={tasks.length}
+                      players={players}
+                      showSolutions={allPlayersSubmitted}
+                      gameMode={gameConfig.gameMode}
+                    />
+                  ) : (
+                    <TeacherDisplay
+                      task={currentTaskData}
+                      timeLimit={gameConfig.timeLimit || undefined}
+                      allowedWordTypes={gameConfig.wordTypes}
+                      currentTaskNumber={currentTask + 1}
+                      totalTasks={tasks.length}
+                      players={players}
+                      showSolutions={allPlayersSubmitted}
+                      gameMode={gameConfig.gameMode}
+                    />
+                  )}
+                </>
               )}
             </div>
             
@@ -779,30 +795,57 @@ function StudentInterface() {
     console.log('Player ID:', playerId)
     console.log('Session ID:', sessionId)
     console.log('Current Task:', currentTask)
-    
-    // Auto-fill: All unanswered words are automatically set to "andere"
-    const currentTaskData = tasks[currentTask]
-    if (currentTaskData) {
-      const unansweredWords = currentTaskData.words.filter(word => !playerAnswers[word.id])
-      
-      if (unansweredWords.length > 0) {
-        console.log(`Auto-filling ${unansweredWords.length} unanswered words with "andere"`)
-        
-        // Submit all unanswered words as "andere"
-        for (const word of unansweredWords) {
-          await submitAnswer(word.id, 'andere')
-        }
-        
-        // Wait a bit for all answers to be processed
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-    }
+    console.log('Game Mode:', gameConfig?.gameMode)
     
     // Mark as submitted BEFORE calling API
     setHasSubmitted(true)
     console.log('✅ Local hasSubmitted set to TRUE')
     
     try {
+      // Handle grouping modes (Satzglieder/Fälle)
+      if (gameConfig?.gameMode === 'satzglieder' || gameConfig?.gameMode === 'fall') {
+        console.log('🔵 Submitting groupings...')
+        console.log('Player Groupings:', JSON.stringify(playerGroupings, null, 2))
+        
+        const groupingResponse = await fetch(`/api/sessions/${sessionId}/submit-grouping`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId, groupings: playerGroupings })
+        })
+        
+        if (groupingResponse.ok) {
+          const groupingData = await groupingResponse.json()
+          console.log(`✅ Grouping submitted! ${groupingData.correctCount}/${groupingData.totalCount} correct`)
+          console.log(`   New score: ${groupingData.score}`)
+          
+          // Update player score locally
+          setPlayers(prev => prev.map(p => 
+            p.id === playerId ? { ...p, score: groupingData.score } : p
+          ))
+        } else {
+          console.error(`❌ Grouping submit failed: ${groupingResponse.status}`)
+        }
+      } else {
+        // Handle single word modes (Wortarten)
+        const currentTaskData = tasks[currentTask]
+        if (currentTaskData) {
+          const unansweredWords = currentTaskData.words.filter(word => !playerAnswers[word.id])
+          
+          if (unansweredWords.length > 0) {
+            console.log(`Auto-filling ${unansweredWords.length} unanswered words with "andere"`)
+            
+            // Submit all unanswered words as "andere"
+            for (const word of unansweredWords) {
+              await submitAnswer(word.id, 'andere')
+            }
+            
+            // Wait a bit for all answers to be processed
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        }
+      }
+      
+      // Mark as submitted in session
       console.log(`🔵 Calling submit API: POST /api/sessions/${sessionId}/submit`)
       console.log(`   Payload: { playerId: "${playerId}" }`)
       

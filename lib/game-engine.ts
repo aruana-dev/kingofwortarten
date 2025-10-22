@@ -109,6 +109,66 @@ export class GameEngine {
     return isCorrect
   }
 
+  // Submit groupings for Satzglieder/Fälle modes
+  submitGroupings(
+    sessionId: string, 
+    playerId: string, 
+    groupings: { [groupId: string]: { wordIds: string[], type: string } }
+  ): { correctCount: number, totalCount: number, score: number } {
+    const session = this.sessions.get(sessionId)
+    if (!session || !session.isStarted || session.isFinished) {
+      return { correctCount: 0, totalCount: 0, score: 0 }
+    }
+
+    const currentTask = session.tasks[session.currentTask]
+    if (!currentTask || !currentTask.sentenceParts) {
+      return { correctCount: 0, totalCount: 0, score: 0 }
+    }
+
+    const player = session.players.find(p => p.id === playerId)
+    if (!player) {
+      return { correctCount: 0, totalCount: 0, score: 0 }
+    }
+
+    // Evaluate each grouping
+    let correctCount = 0
+    const groupingArray = Object.values(groupings)
+
+    for (const playerGroup of groupingArray) {
+      // Find matching sentence part
+      const matchingSentencePart = currentTask.sentenceParts.find(sp => {
+        // Check if word IDs match (order doesn't matter)
+        const spWordIds = sp.wordIds.sort().join(',')
+        const playerWordIds = playerGroup.wordIds.sort().join(',')
+        return spWordIds === playerWordIds
+      })
+
+      if (matchingSentencePart) {
+        // Check if type is correct
+        if (matchingSentencePart.correctType === playerGroup.type) {
+          correctCount++
+          player.score += 1
+        } else {
+          // Wrong type for correct grouping -> -1 point (min 0)
+          player.score = Math.max(0, player.score - 1)
+        }
+      } else {
+        // Wrong grouping -> -1 point (min 0)
+        player.score = Math.max(0, player.score - 1)
+      }
+    }
+
+    console.log(`📊 Grouping validation for player ${player.name}:`)
+    console.log(`   ${correctCount}/${groupingArray.length} groups correct`)
+    console.log(`   New score: ${player.score}`)
+
+    return { 
+      correctCount, 
+      totalCount: groupingArray.length, 
+      score: player.score 
+    }
+  }
+
   nextTask(sessionId: string): GameSession | null {
     const session = this.sessions.get(sessionId)
     if (!session || !session.isStarted) return null
