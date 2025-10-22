@@ -1,6 +1,6 @@
 'use client'
 
-import { GameTask, WORD_TYPES } from '@/types'
+import { GameTask, WORD_TYPES, SATZGLIEDER, FÄLLE, GameMode } from '@/types'
 
 interface TeacherDisplayProps {
   task: GameTask
@@ -10,6 +10,7 @@ interface TeacherDisplayProps {
   totalTasks: number
   players: Array<{id: string, name: string, score: number}>
   showSolutions?: boolean
+  gameMode?: GameMode
 }
 
 export default function TeacherDisplay({ 
@@ -19,8 +20,33 @@ export default function TeacherDisplay({
   currentTaskNumber,
   totalTasks,
   players,
-  showSolutions = false
+  showSolutions = false,
+  gameMode = 'wortarten'
 }: TeacherDisplayProps) {
+  // Get the correct type system based on game mode
+  const getTypeSystem = () => {
+    switch (gameMode) {
+      case 'satzglieder':
+        return SATZGLIEDER
+      case 'fall':
+        return FÄLLE
+      default:
+        return WORD_TYPES
+    }
+  }
+  
+  const TYPE_SYSTEM = getTypeSystem()
+  
+  const getWordTypeLabel = (wordType: string) => {
+    if (!wordType || !TYPE_SYSTEM) return wordType
+    return (TYPE_SYSTEM as any)[wordType]?.label || wordType
+  }
+  
+  const getWordTypeColor = (wordType: string) => {
+    if (!wordType || !TYPE_SYSTEM) return 'bg-gray-500 text-white'
+    return (TYPE_SYSTEM as any)[wordType]?.color || 'bg-gray-500 text-white'
+  }
+  
   return (
     <div className="max-w-4xl mx-auto p-4">
       {/* Progress */}
@@ -54,7 +80,7 @@ export default function TeacherDisplay({
             const isRelevant = correctType && allowedWordTypes.includes(correctType)
             const isOtherType = !correctType || !allowedWordTypes.includes(correctType)
             
-            const wordTypeInfo = correctType ? WORD_TYPES[correctType as keyof typeof WORD_TYPES] : null
+            const wordTypeInfo = correctType ? (TYPE_SYSTEM as any)[correctType] : null
             
             return (
               <div
@@ -79,20 +105,20 @@ export default function TeacherDisplay({
                   </div>
                   {showSolutions && isRelevant && correctType && (
                     <div className="text-xs mt-1 font-normal opacity-90">
-                      {WORD_TYPES[correctType as keyof typeof WORD_TYPES]?.label}
+                      {getWordTypeLabel(correctType)}
                       {word.isUncertain && word.alternativeWordType && (
                         <span className="block text-orange-200 mt-0.5">
-                          (OpenAI: {WORD_TYPES[word.alternativeWordType as keyof typeof WORD_TYPES]?.label})
+                          (OpenAI: {getWordTypeLabel(word.alternativeWordType)})
                         </span>
                       )}
                     </div>
                   )}
                   {showSolutions && isOtherType && (
                     <div className="text-xs mt-1 font-normal opacity-90">
-                      Andere Wortart
+                      Andere{gameMode === 'fall' ? 'r Fall' : gameMode === 'satzglieder' ? 's Satzglied' : ' Wortart'}
                       {word.isUncertain && word.alternativeWordType && (
                         <span className="block text-orange-200 mt-0.5">
-                          (OpenAI: {WORD_TYPES[word.alternativeWordType as keyof typeof WORD_TYPES]?.label})
+                          (OpenAI: {getWordTypeLabel(word.alternativeWordType)})
                         </span>
                       )}
                     </div>

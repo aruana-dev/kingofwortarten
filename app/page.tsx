@@ -489,6 +489,7 @@ function TeacherInterface() {
                   totalTasks={tasks.length}
                   players={players}
                   showSolutions={allPlayersSubmitted}
+                  gameMode={gameConfig.gameMode}
                 />
               )}
             </div>
