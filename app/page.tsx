@@ -914,7 +914,7 @@ function StudentInterface() {
             <div className="lg:col-span-2">
               {currentTaskData && gameConfig && (
                 <>
-                  {gameConfig.gameMode === 'satzglieder' ? (
+                  {gameConfig.gameMode === 'satzglieder' || gameConfig.gameMode === 'fall' ? (
                     <SatzgliederBoard
                       task={currentTaskData}
                       onSubmit={handleSubmitTask}
@@ -923,6 +923,7 @@ function StudentInterface() {
                       isFinished={hasSubmitted}
                       showResults={hasSubmitted}
                       allowedWordTypes={gameConfig.wordTypes}
+                      gameMode={gameConfig.gameMode}
                     />
                   ) : (
                     <GameBoard

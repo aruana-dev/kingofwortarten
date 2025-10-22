@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, HelpCircle } from 'lucide-react'
-import { GameTask, SentencePart, SATZGLIEDER } from '@/types'
+import { GameTask, SentencePart, SATZGLIEDER, FÄLLE, GameMode } from '@/types'
 
 interface SatzgliederBoardProps {
   task: GameTask
@@ -12,6 +12,7 @@ interface SatzgliederBoardProps {
   isFinished: boolean
   showResults: boolean
   allowedWordTypes: string[]
+  gameMode?: GameMode
 }
 
 export default function SatzgliederBoard({
@@ -21,13 +22,17 @@ export default function SatzgliederBoard({
   onGroupingChange,
   isFinished,
   showResults,
-  allowedWordTypes
+  allowedWordTypes,
+  gameMode = 'satzglieder'
 }: SatzgliederBoardProps) {
   const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set())
   const [currentGroupType, setCurrentGroupType] = useState<string | null>(null)
   
-  // Get available sentence part types
-  const availableTypes = Object.values(SATZGLIEDER).filter(
+  // Get the correct type system based on game mode
+  const TYPE_SYSTEM = gameMode === 'fall' ? FÄLLE : SATZGLIEDER
+  
+  // Get available types
+  const availableTypes = Object.values(TYPE_SYSTEM).filter(
     type => allowedWordTypes.includes(type.id) && type.id !== 'andere'
   )
   
@@ -92,7 +97,7 @@ export default function SatzgliederBoard({
   
   // Get sentence part type config
   const getTypeConfig = (typeId: string) => {
-    return SATZGLIEDER[typeId as keyof typeof SATZGLIEDER] || SATZGLIEDER.andere
+    return (TYPE_SYSTEM as any)[typeId] || (TYPE_SYSTEM as any).andere
   }
   
   // Calculate progress
@@ -105,13 +110,15 @@ export default function SatzgliederBoard({
     <div className="max-w-4xl mx-auto">
       {/* Sentence Display */}
       <div className="card mb-6">
-        <h2 className="text-xl font-semibold mb-4">Erkennst du die Satzglieder?</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {gameMode === 'fall' ? 'Erkennst du die Fälle?' : 'Erkennst du die Satzglieder?'}
+        </h2>
         <p className="text-2xl text-center py-6 leading-relaxed">{task.sentence}</p>
         
         {!isFinished && (
           <div className="mt-4">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Fortschritt: {Object.keys(playerGroupings).length} von {task.sentenceParts?.length || 0} Satzgliedern</span>
+              <span>Fortschritt: {Object.keys(playerGroupings).length} von {task.sentenceParts?.length || 0} {gameMode === 'fall' ? 'Fällen' : 'Satzgliedern'}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -157,7 +164,7 @@ export default function SatzgliederBoard({
       {/* Type Selection and Create Button */}
       {!isFinished && selectedWords.size > 0 && (
         <div className="card mb-6">
-          <h3 className="text-lg font-semibold mb-4">2. Wähle das Satzglied</h3>
+          <h3 className="text-lg font-semibold mb-4">2. Wähle {gameMode === 'fall' ? 'den Fall' : 'das Satzglied'}</h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             {availableTypes.map(type => (
               <button
@@ -179,7 +186,7 @@ export default function SatzgliederBoard({
             disabled={!currentGroupType}
             className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Satzglied erstellen
+            {gameMode === 'fall' ? 'Fall-Gruppe erstellen' : 'Satzglied erstellen'}
           </button>
         </div>
       )}
@@ -187,7 +194,7 @@ export default function SatzgliederBoard({
       {/* Created Groups */}
       {Object.keys(playerGroupings).length > 0 && (
         <div className="card mb-6">
-          <h3 className="text-lg font-semibold mb-4">Deine Satzglieder:</h3>
+          <h3 className="text-lg font-semibold mb-4">Deine {gameMode === 'fall' ? 'Fall-Gruppen' : 'Satzglieder'}:</h3>
           <div className="space-y-3">
             {Object.entries(playerGroupings).map(([groupId, group]) => {
               const typeConfig = getTypeConfig(group.type)
@@ -266,7 +273,7 @@ export default function SatzgliederBoard({
           disabled={!canSubmit}
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {canSubmit ? 'Aufgabe abgeben' : 'Erstelle mindestens ein Satzglied'}
+          {canSubmit ? 'Aufgabe abgeben' : `Erstelle mindestens ${gameMode === 'fall' ? 'eine Fall-Gruppe' : 'ein Satzglied'}`}
         </button>
       )}
     </div>

@@ -904,35 +904,49 @@ Use EXACTLY these case IDs (lowercase, no variations):
    - Articles: den, die, das, einen, eine, meinen, etc.
 
 OUTPUT FORMAT (JSON only, no markdown):
-CRITICAL RULES FOR FÄLLE MODE:
-1. Include ALL words individually in "words" array
-2. Do NOT group words (e.g., "Der Mann" should be TWO words: "Der" and "Mann")
-3. Classify ARTICLES, NOUNS, and PRONOUNS with their case
-4. For verbs, adjectives, adverbs, etc., use "andere" as wordType
-5. Put the ARTICLE in quotation marks in explanations, NOT the whole phrase
-6. Include the case question (wer/was/wem/wessen/wen) in explanations
+CRITICAL RULES FOR FÄLLE MODE (similar to Satzglieder):
+1. Return INDIVIDUAL words in "words" array (not grouped!)
+2. Return CASE GROUPS in separate "sentenceParts" array with word indices
+3. Do NOT include punctuation as separate words
+4. Group words that form a noun phrase (article + adjective + noun) together in sentenceParts
 
-For articles/nouns/pronouns in selected cases (${wordTypesList}):
-- "wordType": the correct case ID (nominativ, genitiv, dativ, akkusativ)
-- "explanation": brief explanation with the ARTICLE in quotes + case question
-
-For other words (verbs, adjectives, prepositions, etc.):
-- "wordType": "andere"
-- "explanation": omit or leave empty
-
-Example: 
+The response must have this structure:
 {
-  "sentence": "Der Mann gibt dem Kind einen Ball.",
+  "sentence": "Die Katze jagt eine Maus.",
   "words": [
-    {"text": "Der", "wordType": "nominativ", "explanation": "\\"Der\\" steht im Nominativ (1. Fall), weil es zum Subjekt gehört (wer?)"},
-    {"text": "Mann", "wordType": "nominativ", "explanation": "\\"Mann\\" ist das Nomen im Nominativ (wer gibt?)"},
-    {"text": "gibt", "wordType": "andere"},
-    {"text": "dem", "wordType": "dativ", "explanation": "\\"dem\\" steht im Dativ (3. Fall), weil es zum indirekten Objekt gehört (wem?)"},
-    {"text": "Kind", "wordType": "dativ", "explanation": "\\"Kind\\" ist das Nomen im Dativ (wem gibt der Mann?)"},
-    {"text": "einen", "wordType": "akkusativ", "explanation": "\\"einen\\" steht im Akkusativ (4. Fall), weil es zum direkten Objekt gehört (was?)"},
-    {"text": "Ball", "wordType": "akkusativ", "explanation": "\\"Ball\\" ist das Nomen im Akkusativ (was gibt der Mann?)"}
+    {"text": "Die", "position": 0},
+    {"text": "Katze", "position": 1},
+    {"text": "jagt", "position": 2},
+    {"text": "eine", "position": 3},
+    {"text": "Maus", "position": 4}
+  ],
+  "sentenceParts": [
+    {
+      "text": "Die Katze",
+      "wordIndices": [0, 1],
+      "type": "nominativ",
+      "explanation": "\\"Die Katze\\" steht im Nominativ (1. Fall), weil es das Subjekt ist (wer jagt?)."
+    },
+    {
+      "text": "jagt",
+      "wordIndices": [2],
+      "type": "andere",
+      "explanation": ""
+    },
+    {
+      "text": "eine Maus",
+      "wordIndices": [3, 4],
+      "type": "akkusativ",
+      "explanation": "\\"eine Maus\\" steht im Akkusativ (4. Fall), weil es das direkte Objekt ist (was jagt die Katze?)."
+    }
   ]
 }
+
+IMPORTANT:
+- Every word must appear in exactly ONE case group
+- Only include case groups that match the selected types: ${wordTypesList}
+- For case groups NOT in the selected types, include them but use type "andere"
+- Group article + adjectives + noun together (e.g., "der große Hund" = one group)
 
 CRITICAL: Respond ONLY with valid JSON. Start immediately with {`
   }

@@ -223,10 +223,10 @@ export default function GameBoard({
       {selectedWord && !isFinished && (
         <div className="card mb-6">
           <h3 className="text-lg font-semibold mb-4 text-center">
-            Wähle die Wortart für "{task.words.find(w => w.id === selectedWord)?.text}"
+            Wähle {gameMode === 'fall' ? 'den Fall' : gameMode === 'satzglieder' ? 'das Satzglied' : 'die Wortart'} für "{task.words.find(w => w.id === selectedWord)?.text}"
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Object.values(WORD_TYPES)
+            {Object.values(TYPE_SYSTEM)
               .filter(wordType => 
                 wordType.id === 'andere' || 
                 !allowedWordTypes || 
