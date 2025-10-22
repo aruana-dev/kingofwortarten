@@ -85,6 +85,28 @@ function TeacherInterface() {
   const [isStartingGame, setIsStartingGame] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
+  const [useStoredTasks, setUseStoredTasks] = useState(false)
+  const [storedTasksCount, setStoredTasksCount] = useState<{ wortarten: number, satzglieder: number, fall: number } | null>(null)
+
+  // Fetch stored tasks count when gameMode changes
+  React.useEffect(() => {
+    const fetchStoredTasksCount = async () => {
+      try {
+        const response = await fetch('/api/tasks')
+        if (response.ok) {
+          const data = await response.json()
+          setStoredTasksCount({
+            wortarten: data.wortarten?.length || 0,
+            satzglieder: data.satzglieder?.length || 0,
+            fall: data.fall?.length || 0
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching stored tasks count:', error)
+      }
+    }
+    fetchStoredTasksCount()
+  }, [gameConfig.gameMode])
 
   const generateSessionCode = async () => {
     setIsCreatingSession(true)
@@ -94,7 +116,7 @@ function TeacherInterface() {
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: gameConfig })
+        body: JSON.stringify({ config: gameConfig, useStoredTasks })
       })
       
       if (response.ok) {
@@ -385,6 +407,74 @@ function TeacherInterface() {
             </div>
           </div>
 
+          <div className="card mb-6">
+            <h3 className="text-lg font-semibold mb-4">Aufgabenquelle wählen</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => setUseStoredTasks(false)}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                  !useStoredTasks
+                    ? 'bg-blue-50 border-blue-500 text-blue-900'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold">🤖 Neue Aufgaben generieren</div>
+                    <div className="text-sm mt-1 opacity-75">
+                      OpenAI erstellt neue, einzigartige Aufgaben für deine Spielrunde
+                    </div>
+                  </div>
+                  {!useStoredTasks && (
+                    <div className="ml-4 flex-shrink-0">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setUseStoredTasks(true)}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                  useStoredTasks
+                    ? 'bg-green-50 border-green-500 text-green-900'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold">💾 Gespeicherte Aufgaben verwenden</div>
+                    <div className="text-sm mt-1 opacity-75">
+                      {storedTasksCount ? (
+                        <>Verfügbar: {storedTasksCount[gameConfig.gameMode] || 0} Aufgaben für {gameConfig.gameMode === 'wortarten' ? 'Wortarten' : gameConfig.gameMode === 'satzglieder' ? 'Satzglieder' : 'Fälle'}</>
+                      ) : (
+                        'Lade gespeicherte Aufgaben...'
+                      )}
+                    </div>
+                  </div>
+                  {useStoredTasks && (
+                    <div className="ml-4 flex-shrink-0">
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+            {useStoredTasks && storedTasksCount && storedTasksCount[gameConfig.gameMode] === 0 && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm">
+                ⚠️ Keine gespeicherten Aufgaben verfügbar. Bitte wähle "Neue Aufgaben generieren".
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
               {error}
@@ -393,13 +483,17 @@ function TeacherInterface() {
 
           <button
             onClick={generateSessionCode}
-            disabled={gameConfig.wordTypes.length === 0 || isCreatingSession}
+            disabled={
+              gameConfig.wordTypes.length === 0 || 
+              isCreatingSession || 
+              (useStoredTasks && storedTasksCount !== null && storedTasksCount[gameConfig.gameMode] === 0)
+            }
             className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isCreatingSession ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Erstelle Session...
+                {useStoredTasks ? 'Lade gespeicherte Aufgaben...' : 'Generiere neue Aufgaben...'}
               </>
             ) : (
               'Session erstellen'

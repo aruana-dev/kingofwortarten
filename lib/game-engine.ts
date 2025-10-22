@@ -1,6 +1,7 @@
 import { GameSession, GameTask, Word, GameConfig, WORD_TYPES, SAMPLE_SENTENCES } from '@/types'
 import { v4 as uuidv4 } from 'uuid'
 import { OpenAIGenerator } from './openai-generator'
+import { getJSONBinService } from './jsonbin-service'
 
 export class GameEngine {
   private sessions: Map<string, GameSession> = new Map()
@@ -12,11 +13,45 @@ export class GameEngine {
     }
   }
 
-  async createSession(config: GameConfig): Promise<GameSession> {
+  async createSession(config: GameConfig, useStoredTasks: boolean = false): Promise<GameSession> {
     const sessionId = uuidv4()
     const sessionCode = this.generateSessionCode()
     
-    const tasks = await this.generateTasks(config)
+    let tasks: GameTask[]
+    
+    if (useStoredTasks) {
+      // Load tasks from JSONBin
+      console.log(`📥 Loading stored tasks for mode: ${config.gameMode}`)
+      try {
+        const jsonbin = getJSONBinService()
+        const allTasks = await jsonbin.getTasksForMode(config.gameMode)
+        
+        if (allTasks.length === 0) {
+          throw new Error('Keine gespeicherten Aufgaben verfügbar. Bitte generiere neue Aufgaben.')
+        }
+        
+        // Randomly select tasks from stored ones
+        tasks = this.selectRandomTasks(allTasks, config.taskCount)
+        console.log(`✅ Selected ${tasks.length} stored tasks`)
+      } catch (error) {
+        console.error('❌ Error loading stored tasks:', error)
+        throw new Error(`Fehler beim Laden gespeicherter Aufgaben: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`)
+      }
+    } else {
+      // Generate new tasks with OpenAI
+      console.log(`🤖 Generating new tasks for mode: ${config.gameMode}`)
+      tasks = await this.generateTasks(config)
+      
+      // Save generated tasks to JSONBin for future use
+      try {
+        const jsonbin = getJSONBinService()
+        await jsonbin.saveTasks(tasks, config.gameMode)
+        console.log(`✅ Saved ${tasks.length} new tasks to JSONBin`)
+      } catch (error) {
+        console.error('⚠️ Failed to save tasks to JSONBin:', error)
+        // Don't fail the session creation if saving fails
+      }
+    }
     
     const session: GameSession = {
       id: sessionId,
@@ -33,6 +68,12 @@ export class GameEngine {
 
     this.sessions.set(sessionId, session)
     return session
+  }
+  
+  private selectRandomTasks(tasks: GameTask[], count: number): GameTask[] {
+    // Shuffle and select random tasks
+    const shuffled = [...tasks].sort(() => Math.random() - 0.5)
+    return shuffled.slice(0, Math.min(count, shuffled.length))
   }
 
   joinSession(sessionCode: string, playerName: string): GameSession | null {

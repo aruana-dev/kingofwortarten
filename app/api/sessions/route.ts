@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const { config } = await request.json()
+    const { config, useStoredTasks } = await request.json()
     
     if (!config || !config.wordTypes || config.wordTypes.length === 0) {
       return NextResponse.json(
@@ -15,7 +15,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const session = await gameEngine.createSession(config)
+    console.log(`📝 Creating session with ${useStoredTasks ? 'stored' : 'new'} tasks`)
+    const session = await gameEngine.createSession(config, useStoredTasks || false)
     
     return NextResponse.json({
       sessionId: session.id,
@@ -24,8 +25,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error creating session:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

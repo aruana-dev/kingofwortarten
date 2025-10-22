@@ -509,15 +509,17 @@ export class OpenAIGenerator {
       return this.createSatzgliederTask(data, wordTypes, gameMode)
     }
     
+    // Validate that all words have the required "text" field
+    if (!data.words || !Array.isArray(data.words)) {
+      throw new Error('❌ OpenAI Response ungültig: "words" Array fehlt oder ist ungültig')
+    }
+    
     // Filter out punctuation-only words and clean up text
     const filteredWords = data.words.filter((w: any) => {
-      // Handle both "text" and "word" field names (OpenAI inconsistency)
-      const wordText = w.text || w.word
-      if (!wordText) {
-        console.log(`   ⚠️ Word object missing both 'text' and 'word' field:`, w)
-        return false
+      if (!w.text) {
+        throw new Error(`❌ OpenAI Response ungültig: Wort-Objekt hat kein "text" Feld. Verwende "text", nicht "word". Objekt: ${JSON.stringify(w)}`)
       }
-      const cleanText = wordText.trim()
+      const cleanText = w.text.trim()
       // Remove if it's ONLY punctuation
       const isPunctuationOnly = /^[.,!?;:\-–—()«»""\[\]{}]+$/.test(cleanText)
       if (isPunctuationOnly) {
@@ -528,10 +530,8 @@ export class OpenAIGenerator {
     })
     
     const words: Word[] = filteredWords.map((w: any, index: number) => {
-      // Handle both "text" and "word" field names (OpenAI inconsistency)
-      const wordText = w.text || w.word
       // Clean the text: remove trailing punctuation
-      const cleanedText = wordText.trim().replace(/[.,!?;:]$/, '')
+      const cleanedText = w.text.trim().replace(/[.,!?;:]$/, '')
       
       return {
         id: this.generateId(),
@@ -567,28 +567,31 @@ export class OpenAIGenerator {
   private createSatzgliederTask(data: any, wordTypes: string[], gameMode: GameMode): GameTask {
     const sentence = data.sentence
     
+    // Validate sentenceParts structure
+    if (!data.words || !Array.isArray(data.words)) {
+      throw new Error('❌ OpenAI Response ungültig: "words" Array fehlt')
+    }
+    if (!data.sentenceParts || !Array.isArray(data.sentenceParts)) {
+      throw new Error('❌ OpenAI Response ungültig: "sentenceParts" Array fehlt')
+    }
+    
     // Create individual words (not pre-grouped)
-    const words: Word[] = data.words
-      .map((w: any, index: number) => {
-        // Handle both "text" and "word" field names (OpenAI inconsistency)
-        const wordText = w.text || w.word
-        if (!wordText) {
-          console.log(`   ⚠️ Word object missing both 'text' and 'word' field in sentenceParts:`, w)
-          return null
-        }
-        const cleanedText = wordText.trim().replace(/[.,!?;:]$/, '')
-        
-        return {
-          id: this.generateId(),
-          text: cleanedText,
-          correctWordType: 'word', // Not used for Satzglieder/Fälle
-          position: w.position !== undefined ? w.position : index,
-          explanation: undefined,
-          isUncertain: false,
-          alternativeWordType: undefined
-        }
-      })
-      .filter((w: Word | null): w is Word => w !== null) // Filter out null values
+    const words: Word[] = data.words.map((w: any, index: number) => {
+      if (!w.text) {
+        throw new Error(`❌ OpenAI Response ungültig: Wort-Objekt hat kein "text" Feld. Objekt: ${JSON.stringify(w)}`)
+      }
+      const cleanedText = w.text.trim().replace(/[.,!?;:]$/, '')
+      
+      return {
+        id: this.generateId(),
+        text: cleanedText,
+        correctWordType: 'word', // Not used for Satzglieder/Fälle
+        position: w.position !== undefined ? w.position : index,
+        explanation: undefined,
+        isUncertain: false,
+        alternativeWordType: undefined
+      }
+    })
     
     // Create sentence parts from OpenAI data
     const sentenceParts: any[] = data.sentenceParts.map((sp: any) => {
