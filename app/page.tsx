@@ -95,14 +95,36 @@ function TeacherInterface() {
         const response = await fetch('/api/tasks')
         if (response.ok) {
           const data = await response.json()
+          
+          // Check for warnings/errors
+          if (data.warning) {
+            console.warn('⚠️ JSONBin warning:', data.warning)
+          }
+          if (data.error) {
+            console.error('❌ JSONBin error:', data.error)
+          }
+          
           setStoredTasksCount({
             wortarten: data.wortarten?.length || 0,
             satzglieder: data.satzglieder?.length || 0,
             fall: data.fall?.length || 0
           })
+        } else {
+          // Even on error, set to zero to show UI
+          setStoredTasksCount({
+            wortarten: 0,
+            satzglieder: 0,
+            fall: 0
+          })
         }
       } catch (error) {
         console.error('Error fetching stored tasks count:', error)
+        // Set to zero to show UI even on error
+        setStoredTasksCount({
+          wortarten: 0,
+          satzglieder: 0,
+          fall: 0
+        })
       }
     }
     fetchStoredTasksCount()
@@ -469,8 +491,12 @@ function TeacherInterface() {
               </button>
             </div>
             {useStoredTasks && storedTasksCount && storedTasksCount[gameConfig.gameMode] === 0 && (
-              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm">
-                ⚠️ Keine gespeicherten Aufgaben verfügbar. Bitte wähle "Neue Aufgaben generieren".
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm">
+                <div className="font-semibold mb-1">💡 Noch keine Aufgaben gespeichert</div>
+                <div>
+                  Beim ersten Mal musst du "Neue Aufgaben generieren" wählen. 
+                  Die generierten Aufgaben werden automatisch gespeichert und können dann wiederverwendet werden.
+                </div>
               </div>
             )}
           </div>

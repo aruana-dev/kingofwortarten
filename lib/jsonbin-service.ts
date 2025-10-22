@@ -113,11 +113,17 @@ export class JSONBinService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('⚠️ Bin not found, returning empty tasks')
+          console.log('⚠️ Bin not found (noch keine Aufgaben gespeichert), returning empty tasks')
+          return { wortarten: [], satzglieder: [], fall: [] }
+        }
+        if (response.status === 401 || response.status === 403) {
+          console.error('❌ JSONBin authentication failed - check JSONBIN_API_KEY')
           return { wortarten: [], satzglieder: [], fall: [] }
         }
         const errorText = await response.text()
-        throw new Error(`JSONBin API error: ${response.status} - ${errorText}`)
+        console.error(`⚠️ JSONBin API error: ${response.status} - ${errorText}`)
+        // Return empty instead of throwing to prevent app crashes
+        return { wortarten: [], satzglieder: [], fall: [] }
       }
 
       const data: SavedTasksResponse = await response.json()
@@ -131,7 +137,8 @@ export class JSONBinService {
       }
     } catch (error) {
       console.error('❌ Error fetching tasks from JSONBin:', error)
-      throw error
+      // Return empty tasks instead of throwing to prevent app crashes
+      return { wortarten: [], satzglieder: [], fall: [] }
     }
   }
 
