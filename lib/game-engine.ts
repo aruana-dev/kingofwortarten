@@ -45,8 +45,11 @@ export class GameEngine {
       // Save generated tasks to JSONBin for future use
       try {
         const jsonbin = getJSONBinService()
-        await jsonbin.saveTasks(tasks, config.gameMode)
+        const binId = await jsonbin.saveTasks(tasks, config.gameMode)
         console.log(`✅ Saved ${tasks.length} new tasks to JSONBin`)
+        if (binId) {
+          console.log(`📌 JSONBin BIN_ID: ${binId}`)
+        }
       } catch (error) {
         console.error('⚠️ Failed to save tasks to JSONBin:', error)
         // Don't fail the session creation if saving fails

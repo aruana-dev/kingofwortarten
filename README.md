@@ -42,6 +42,57 @@
 
 ---
 
+## 🔑 JSONBin Setup (WICHTIG!)
+
+Die App speichert generierte Aufgaben in JSONBin, damit sie wiederverwendet werden können.
+
+### Erste Einrichtung:
+
+1. **JSONBin Account erstellen:**
+   - Gehe zu https://jsonbin.io/
+   - Erstelle einen kostenlosen Account
+   - Erstelle einen neuen API Key
+
+2. **Environment Variables setzen:**
+   ```bash
+   # Lokal (.env.local)
+   JSONBIN_API_KEY=your_api_key_here
+   
+   # Railway/Vercel
+   # Füge die gleiche Variable in den Settings hinzu
+   ```
+
+3. **Erste Session erstellen:**
+   - Wähle "Neue Aufgaben generieren"
+   - Schau in die Railway Logs
+   - Du siehst:
+   ```
+   ═══════════════════════════════════════════════════════
+   🔑 WICHTIG: Bitte diese BIN ID speichern!
+      JSONBIN_BIN_ID=67a1b2c3d4e5f6g7h8i9j0k1
+   ═══════════════════════════════════════════════════════
+   ```
+
+4. **BIN_ID als Environment Variable hinzufügen:**
+   ```bash
+   # Lokal (.env.local)
+   JSONBIN_BIN_ID=67a1b2c3d4e5f6g7h8i9j0k1
+   
+   # Railway/Vercel Settings
+   JSONBIN_BIN_ID=67a1b2c3d4e5f6g7h8i9j0k1
+   ```
+
+5. **Neu deployen/starten:**
+   - Railway: Deployment triggern
+   - Vercel: Neu deployen
+   - Ab jetzt werden alle Aufgaben im gleichen Bin gespeichert!
+
+### Wichtig:
+- **Ohne `JSONBIN_BIN_ID`**: Bei jedem Neustart wird ein neues Bin erstellt
+- **Mit `JSONBIN_BIN_ID`**: Alle Aufgaben bleiben persistent und wachsen mit der Zeit
+
+---
+
 ## 💻 Lokale Entwicklung
 
 ### Voraussetzungen

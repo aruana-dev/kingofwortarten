@@ -23,8 +23,9 @@ export class JSONBinService {
 
   /**
    * Save tasks to JSONBin, organized by game mode
+   * Returns the bin ID (useful when a new bin is created)
    */
-  async saveTasks(tasks: GameTask[], gameMode: GameMode): Promise<void> {
+  async saveTasks(tasks: GameTask[], gameMode: GameMode): Promise<string | null> {
     try {
       console.log(`💾 Saving ${tasks.length} tasks for mode: ${gameMode}`)
 
@@ -78,15 +79,25 @@ export class JSONBinService {
       if (method === 'POST') {
         this.binId = data.metadata.id
         console.log(`✅ Created new bin: ${this.binId}`)
+        console.log('═══════════════════════════════════════════════════════')
+        console.log('🔑 WICHTIG: Bitte diese BIN ID in den Environment Variables speichern!')
+        console.log(`   JSONBIN_BIN_ID=${this.binId}`)
+        console.log('   Sonst wird bei jedem Neustart ein neues Bin erstellt.')
+        console.log('═══════════════════════════════════════════════════════')
       } else {
         console.log(`✅ Updated existing bin: ${this.binId}`)
       }
 
       console.log(`📊 Total tasks in bin: wortarten=${existingData.wortarten.length}, satzglieder=${existingData.satzglieder.length}, fall=${existingData.fall.length}`)
+      
+      // Return the bin ID so it can be used/displayed
+      return this.binId
     } catch (error) {
       console.error('❌ Error saving tasks to JSONBin:', error)
       throw error
     }
+    
+    return null // Shouldn't reach here, but TypeScript wants a return
   }
 
   /**
